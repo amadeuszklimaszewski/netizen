@@ -1,3 +1,4 @@
+from time import sleep
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -53,3 +54,7 @@ class UserService:
         if user is None or not pwd_context.verify(password, user.hashed_password):
             raise InvalidCredentials("No matches with given token")
         return user
+
+    @classmethod
+    async def send_activation_email(cls, email: str):
+        ...

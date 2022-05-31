@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import Depends, status
+from fastapi import BackgroundTasks, Depends, status
 from fastapi.routing import APIRouter
 from fastapi_another_jwt_auth import AuthJWT
 
@@ -23,12 +23,15 @@ user_router = APIRouter(prefix="/users")
 )
 async def register_user(
     user_register_schema: RegisterSchema,
+    background_tasks: BackgroundTasks,
     user_service: UserService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     user_schema = await user_service.register_user(
         user_register_schema, session=session
     )
+    email = user_schema.email
+    background_tasks.add_task(user_service.send_activation_email, email)
     return user_schema
 
 
