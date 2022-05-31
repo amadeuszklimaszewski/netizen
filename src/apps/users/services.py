@@ -1,4 +1,3 @@
-from time import sleep
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -56,5 +55,5 @@ class UserService:
         return user
 
     @classmethod
-    async def send_activation_email(cls, email: str):
+    def send_activation_email(cls, email: str):
         ...
