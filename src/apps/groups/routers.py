@@ -7,7 +7,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.users.models import User
 from src.database.connection import get_db
-from src.dependencies.users import authenticate_user
+from src.dependencies.users import authenticate_user, get_user_or_none
 
 from src.apps.groups.models import (
     GroupMembershipOutputSchema,
@@ -32,7 +32,7 @@ group_router = APIRouter(prefix="/groups")
 )
 async def get_groups(
     group_service: GroupService = Depends(),
-    # request_user: User = Depends(authenticate_user),
+    request_user: User = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ):
     return (await session.exec(select(Group))).all()
@@ -47,7 +47,7 @@ async def get_groups(
 async def get_group_by_id(
     group_id: UUID,
     group_service: GroupService = Depends(),
-    request_user: User = Depends(authenticate_user),
+    request_user: User = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -182,7 +182,7 @@ async def leave_group(
 async def get_group_members(
     group_id: UUID,
     group_service: GroupService = Depends(),
-    request_user: User = Depends(authenticate_user),
+    request_user: User = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -205,7 +205,7 @@ async def get_group_member_by_id(
 
 
 @group_router.post(
-    "/{group_id}/requests/{member_id}/",
+    "/{group_id}/members/{member_id}/",
     tags=["groups"],
     status_code=status.HTTP_200_OK,
     response_model=GroupMembershipOutputSchema,

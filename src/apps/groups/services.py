@@ -33,7 +33,6 @@ class GroupService:
         group = Group(**group_data)
         session.add(group)
         await session.commit()
-        await session.refresh(group)
 
         admin = await cls.create_membership(
             group=group,
@@ -42,4 +41,11 @@ class GroupService:
             session=session,
         )
 
+        await session.refresh(group)
         return Group.from_orm(group)
+
+    @classmethod
+    async def update_group(
+        cls, schema: GroupInputSchema, user: User, session: AsyncSession
+    ):
+        ...
