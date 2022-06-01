@@ -3,7 +3,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.users.models import (
     User,
-    UserOutput,
+    UserOutputSchema,
     RegisterSchema,
 )
 from src.apps.users.utils import pwd_context
@@ -21,7 +21,7 @@ class UserService:
     @classmethod
     async def register_user(
         cls, schema: RegisterSchema, session: AsyncSession
-    ) -> UserOutput:
+    ) -> UserOutputSchema:
         user_data = schema.dict()
         user_data.pop("password2")
         user_data["hashed_password"] = await cls._hash_password(

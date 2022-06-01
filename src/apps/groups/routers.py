@@ -3,39 +3,198 @@ from fastapi import BackgroundTasks, Depends, status
 from fastapi.routing import APIRouter
 from fastapi_another_jwt_auth import AuthJWT
 
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
+from src.apps.users.models import User
+from src.database.connection import get_db
+from src.dependencies.users import authenticate_user
+
+from src.apps.groups.models import (
+    GroupMembershipOutputSchema,
+    GroupOutputSchema,
+    GroupInputSchema,
+    Group,
+    GroupRequestOutputSchema,
+)
+from src.apps.groups.services import (
+    GroupService,
+    GroupRequestService,
+    GroupMembershipService,
+)
+
+
 group_router = APIRouter(prefix="/groups")
 
+# dependencies=[Depends(authenticate_user)]
 
-@group_router.get()
-async def get_groups():
+
+@group_router.get("/", status_code=status.HTTP_200_OK, response_model=GroupOutputSchema)
+async def get_groups(
+    group_service: GroupService,
+    # request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
+    return (await session.exec(select(Group))).all()
+
+
+@group_router.get(
+    "/{group_id}/", status_code=status.HTTP_200_OK, response_model=GroupOutputSchema
+)
+async def get_group_by_id(
+    group_id: UUID,
+    group_service: GroupService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
     ...
 
 
-@group_router.get()
-async def get_group_by_id():
+@group_router.post(
+    "/", status_code=status.HTTP_201_CREATED, response_model=GroupOutputSchema
+)
+async def create_group(
+    group_input_schema: GroupInputSchema,
+    group_service: GroupService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
+    group_schema = await group_service.create_group(
+        schema=group_input_schema, user=request_user, session=session
+    )
+    return group_schema
+
+
+@group_router.put(
+    "/{group_id}/", status_code=status.HTTP_200_OK, response_model=GroupOutputSchema
+)
+async def update_group(
+    group_input_schema: GroupInputSchema,
+    group_service: GroupService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
     ...
 
 
-@group_router.post()
-async def create_group():
+@group_router.delete("/{group_id}/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_group(
+    group_service: GroupService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
     ...
 
 
-@group_router.put()
-async def update_group():
+@group_router.get(
+    "/{group_id}/requests/",
+    status_code=status.HTTP_200_OK,
+    response_model=GroupRequestOutputSchema,
+)
+async def get_group_requests(
+    group_id: UUID,
+    group_service: GroupService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
     ...
 
 
-@group_router.delete()
-async def delete_group():
+@group_router.get(
+    "/{group_id}/requests/{request_id}/",
+    status_code=status.HTTP_200_OK,
+    response_model=GroupRequestOutputSchema,
+)
+async def get_group_request_by_id(
+    group_id: UUID,
+    request_id: UUID,
+    group_service: GroupService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
     ...
 
 
-@group_router.post()
-async def join_to_group():
+@group_router.put(
+    "/{group_id}/requests/{request_id}/",
+    status_code=status.HTTP_200_OK,
+    response_model=GroupRequestOutputSchema,
+)
+async def update_group_request(
+    group_id: UUID,
+    request_id: UUID,
+    group_service: GroupService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
     ...
 
 
-@group_router.post()
-async def leave_group():
+@group_router.post(
+    "/{group_id}/",
+    status_code=status.HTTP_201_CREATED,
+    response_model=GroupRequestOutputSchema,
+)
+async def join_to_group(
+    group_id: UUID,
+    group_membership_service: GroupMembershipService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
+    ...
+
+
+@group_router.delete(
+    "/{group_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def leave_group(
+    group_id: UUID,
+    group_membership_service: GroupMembershipService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
+    ...
+
+
+@group_router.get(
+    "/{group_id}/members/",
+    status_code=status.HTTP_200_OK,
+    response_model=GroupMembershipOutputSchema,
+)
+async def get_group_members(
+    group_id: UUID,
+    group_membership_service: GroupMembershipService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
+    ...
+
+
+@group_router.get(
+    "/{group_id}/members/{member_id}/",
+    status_code=status.HTTP_200_OK,
+    response_model=GroupMembershipOutputSchema,
+)
+async def get_group_member_by_id(
+    group_id: UUID,
+    member_id: UUID,
+    group_membership_service: GroupMembershipService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
+    ...
+
+
+@group_router.post(
+    "/{group_id}/requests/{member_id}/",
+    status_code=status.HTTP_200_OK,
+    response_model=GroupMembershipOutputSchema,
+)
+async def update_group_member(
+    group_id: UUID,
+    member_id: UUID,
+    group_membership_service: GroupMembershipService,
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
     ...

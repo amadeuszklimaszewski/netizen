@@ -6,7 +6,7 @@ from fastapi_another_jwt_auth import AuthJWT
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.apps.users.models import User, UserOutput, LoginSchema, RegisterSchema
+from src.apps.users.models import User, UserOutputSchema, LoginSchema, RegisterSchema
 from src.apps.users.services import UserService
 from src.apps.jwt.schemas import TokenSchema
 from src.database.connection import get_db
@@ -19,7 +19,7 @@ user_router = APIRouter(prefix="/users")
     "/register/",
     tags=["users"],
     status_code=status.HTTP_201_CREATED,
-    response_model=UserOutput,
+    response_model=UserOutputSchema,
 )
 async def register_user(
     user_register_schema: RegisterSchema,
@@ -59,23 +59,23 @@ async def login_user(
     tags=["users"],
     dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_200_OK,
-    response_model=list[UserOutput],
+    response_model=list[UserOutputSchema],
 )
-async def get_users(session: AsyncSession = Depends(get_db)) -> list[UserOutput]:
+async def get_users(session: AsyncSession = Depends(get_db)) -> list[UserOutputSchema]:
     result = await session.exec(select(User))
-    return [UserOutput.from_orm(user) for user in result.all()]
+    return [UserOutputSchema.from_orm(user) for user in result.all()]
 
 
 @user_router.get(
     "/profile/",
     tags=["users"],
     status_code=status.HTTP_200_OK,
-    response_model=UserOutput,
+    response_model=UserOutputSchema,
 )
 async def get_logged_user(
     request_user: User = Depends(authenticate_user),
-) -> UserOutput:
-    return UserOutput.from_orm(request_user)
+) -> UserOutputSchema:
+    return UserOutputSchema.from_orm(request_user)
 
 
 @user_router.get(
@@ -83,10 +83,10 @@ async def get_logged_user(
     tags=["users"],
     dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_200_OK,
-    response_model=UserOutput,
+    response_model=UserOutputSchema,
 )
 async def get_user(
     user_id: UUID, session: AsyncSession = Depends(get_db)
-) -> UserOutput:
+) -> UserOutputSchema:
     result = await session.exec(select(User).where(User.id == user_id))
     return User.from_orm(result.first())

@@ -1,9 +1,12 @@
 import datetime as dt
 from dateutil.relativedelta import relativedelta
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from pydantic import validator, validate_email as validate_email_pd
-from sqlmodel import SQLModel, Field, Column, String
+from sqlmodel import Relationship, SQLModel, Field, Column, String
 from src.core.models import TimeStampedUUIDModelBase
+
+if TYPE_CHECKING:
+    from src.apps.groups.models import GroupRequest, GroupMembership
 
 
 class UserBase(SQLModel):
@@ -15,12 +18,15 @@ class UserBase(SQLModel):
     is_active: bool = True
 
 
-class UserOutput(TimeStampedUUIDModelBase, UserBase):
+class UserOutputSchema(TimeStampedUUIDModelBase, UserBase):
     ...
 
 
 class User(TimeStampedUUIDModelBase, UserBase, table=True):
     hashed_password: str
+
+    membership_requests: list["GroupRequest"] = Relationship(back_populates="user")
+    memberships: list["GroupMembership"] = Relationship(back_populates="user")
 
 
 class LoginSchema(SQLModel):
