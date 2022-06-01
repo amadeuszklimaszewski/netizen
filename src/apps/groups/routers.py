@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Union
 from fastapi import BackgroundTasks, Depends, status
 from fastapi.routing import APIRouter
 from fastapi_another_jwt_auth import AuthJWT
@@ -32,7 +33,7 @@ group_router = APIRouter(prefix="/groups")
 )
 async def get_groups(
     group_service: GroupService = Depends(),
-    request_user: User = Depends(get_user_or_none),
+    request_user: Union[User, None] = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ):
     return (await session.exec(select(Group))).all()
@@ -47,7 +48,7 @@ async def get_groups(
 async def get_group_by_id(
     group_id: UUID,
     group_service: GroupService = Depends(),
-    request_user: User = Depends(get_user_or_none),
+    request_user: Union[User, None] = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -182,7 +183,7 @@ async def leave_group(
 async def get_group_members(
     group_id: UUID,
     group_service: GroupService = Depends(),
-    request_user: User = Depends(get_user_or_none),
+    request_user: Union[User, None] = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ):
     ...
