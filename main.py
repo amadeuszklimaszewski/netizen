@@ -5,6 +5,7 @@ from fastapi_another_jwt_auth.exceptions import AuthJWTException
 
 from src.apps.users.routers import user_router
 from src.apps.jwt.routers import jwt_router
+from src.apps.groups.routers import group_router
 from src.core.exceptions import APIException
 
 app = FastAPI(title="Netizen", description="API for a social network", version="1.0")
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/api/v1")
 
 router.include_router(user_router)
 router.include_router(jwt_router)
-
+router.include_router(group_router)
 app.include_router(router)
 
 
