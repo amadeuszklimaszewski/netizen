@@ -36,7 +36,7 @@ class GroupMembership(TimeStampedUUIDModelBase, table=True):
 
     membership_status: GroupMemberStatus = Field(
         sa_column=Column(
-            Enum(GroupRequestStatus), default=None, nullable=True, index=False
+            Enum(GroupMemberStatus), default=None, nullable=True, index=False
         )
     )
 

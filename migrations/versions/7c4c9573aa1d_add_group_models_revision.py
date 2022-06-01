@@ -1,8 +1,8 @@
 """Add group models revision
 
-Revision ID: ed82d38ee676
+Revision ID: 7c4c9573aa1d
 Revises: f95f72e77a40
-Create Date: 2022-06-01 21:05:18.386215
+Create Date: 2022-06-01 22:10:42.904308
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision = 'ed82d38ee676'
+revision = '7c4c9573aa1d'
 down_revision = 'f95f72e77a40'
 branch_labels = None
 depends_on = None
@@ -33,7 +33,7 @@ def upgrade():
     op.create_table('groupmembership',
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('membership_status', sa.Enum('PENDING', 'ACCEPTED', 'DENIED', name='grouprequeststatus'), nullable=True),
+    sa.Column('membership_status', sa.Enum('ADMIN', 'MODERATOR', 'REGULAR', name='groupmemberstatus'), nullable=True),
     sa.Column('id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
     sa.Column('group_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
     sa.Column('user_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
