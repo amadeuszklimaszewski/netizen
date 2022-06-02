@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 
 
 class GroupRequest(TimeStampedUUIDModelBase, table=True):
-    group_id: UUID = Field(default=None, foreign_key="group.id", primary_key=True)
-    user_id: UUID = Field(default=None, foreign_key="user.id", primary_key=True)
+    group_id: UUID = Field(foreign_key="group.id", primary_key=True)
+    user_id: UUID = Field(foreign_key="user.id", primary_key=True)
 
     status: GroupRequestStatus = Field(
         sa_column=Column(
@@ -26,13 +26,15 @@ class GroupRequest(TimeStampedUUIDModelBase, table=True):
     user: Optional["User"] = Relationship(back_populates="membership_requests")
 
 
-class GroupRequestOutputSchema(GroupRequest):
-    ...
+class GroupRequestOutputSchema(SQLModel):
+    group_id: UUID
+    user_id: UUID
+    status: GroupRequestStatus
 
 
 class GroupMembership(TimeStampedUUIDModelBase, table=True):
-    group_id: UUID = Field(default=None, foreign_key="group.id", primary_key=True)
-    user_id: UUID = Field(default=None, foreign_key="user.id", primary_key=True)
+    group_id: UUID = Field(foreign_key="group.id", primary_key=True)
+    user_id: UUID = Field(foreign_key="user.id", primary_key=True)
 
     membership_status: GroupMemberStatus = Field(
         sa_column=Column(
@@ -44,24 +46,28 @@ class GroupMembership(TimeStampedUUIDModelBase, table=True):
     user: Optional["User"] = Relationship(back_populates="memberships")
 
 
-class GroupMembershipOutputSchema(GroupMembership):
-    ...
+class GroupMembershipOutputSchema(SQLModel):
+    group_id: UUID
+    user_id: UUID
+    membership_status: GroupMemberStatus
 
 
-class GroupBase(SQLModel):
+class Group(TimeStampedUUIDModelBase, table=True):
     name: str = Field(sa_column=Column("name", String, unique=True))
     description: str
     status: GroupStatus = Field(sa_column=Column(Enum(GroupStatus)))
 
-
-class Group(TimeStampedUUIDModelBase, GroupBase, table=True):
     requests: list[GroupRequest] = Relationship(back_populates="group")
     members: list[GroupMembership] = Relationship(back_populates="group")
 
 
-class GroupOutputSchema(TimeStampedUUIDModelBase, GroupBase):
-    ...
+class GroupOutputSchema(SQLModel):
+    name: str
+    description: str
+    status: GroupStatus
 
 
-class GroupInputSchema(GroupBase):
+class GroupInputSchema(SQLModel):
     name: str = Field(min_length=5)
+    description: str
+    status: GroupStatus
