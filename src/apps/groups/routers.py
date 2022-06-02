@@ -1,3 +1,4 @@
+from http.client import HTTPResponse
 from uuid import UUID
 from typing import Union
 from fastapi import BackgroundTasks, Depends, status
@@ -11,6 +12,7 @@ from src.database.connection import get_db
 from src.dependencies.users import authenticate_user, get_user_or_none
 
 from src.apps.groups.models import (
+    GroupMembership,
     GroupMembershipOutputSchema,
     GroupOutputSchema,
     GroupInputSchema,
@@ -35,7 +37,7 @@ async def get_groups(
     group_service: GroupService = Depends(),
     request_user: Union[User, None] = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
-):
+) -> list[GroupOutputSchema]:
     return (await session.exec(select(Group))).all()
 
 
@@ -50,8 +52,8 @@ async def get_group_by_id(
     group_service: GroupService = Depends(),
     request_user: Union[User, None] = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
-):
-    ...
+) -> GroupOutputSchema:
+    return (await session.exec(select(Group).where(Group.id == group_id))).first()
 
 
 @group_router.post(
@@ -65,7 +67,7 @@ async def create_group(
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
-):
+) -> GroupOutputSchema:
     group_schema = await group_service.create_group(
         schema=group_input_schema, user=request_user, session=session
     )
@@ -79,12 +81,26 @@ async def create_group(
     response_model=GroupOutputSchema,
 )
 async def update_group(
-    group_input_schema: GroupInputSchema,
+    update_schema: GroupInputSchema,
+    group_id: UUID,
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
-):
-    ...
+) -> GroupOutputSchema:
+    group = (await session.exec(select(Group).where(Group.id == group_id))).first()
+    membership: GroupMembership = (
+        await session.exec(
+            select(GroupMembership).where(GroupMembership.group_id == group_id)
+        )
+    ).first()
+    # if membership.user != request_user:
+    #     return HTTPResponse(
+    #         status=status.HTTP_401_UNAUTHORIZED, content="User unauthorized"
+    #     )
+    updated_group = await group_service.update_group(
+        schema=update_schema, group=group, user=request_user, session=session
+    )
+    return GroupOutputSchema.from_orm(updated_group)
 
 
 @group_router.delete(
