@@ -29,7 +29,7 @@ group_router = APIRouter(prefix="/groups")
     "/",
     tags=["groups"],
     status_code=status.HTTP_200_OK,
-    response_model=GroupOutputSchema,
+    response_model=list[GroupOutputSchema],
 )
 async def get_groups(
     group_service: GroupService = Depends(),
@@ -102,7 +102,7 @@ async def delete_group(
     "/{group_id}/requests/",
     tags=["groups"],
     status_code=status.HTTP_200_OK,
-    response_model=GroupRequestOutputSchema,
+    response_model=list[GroupRequestOutputSchema],
 )
 async def get_group_requests(
     group_id: UUID,
@@ -178,7 +178,7 @@ async def leave_group(
     "/{group_id}/members/",
     tags=["groups"],
     status_code=status.HTTP_200_OK,
-    response_model=GroupMembershipOutputSchema,
+    response_model=list[GroupMembershipOutputSchema],
 )
 async def get_group_members(
     group_id: UUID,
