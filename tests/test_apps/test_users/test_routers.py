@@ -1,26 +1,10 @@
 from fastapi import Response, status
 from httpx import AsyncClient
 import pytest
-import pytest_asyncio
-from fastapi_another_jwt_auth import AuthJWT
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.apps.users.models import User, UserOutput, RegisterSchema
-from src.apps.users.services import UserService
-
-
-@pytest.fixture
-def user_register_data() -> dict[str, str]:
-    return {
-        "first_name": "name",
-        "last_name": "name",
-        "username": "username",
-        "email": "testuser@google.com",
-        "password": "test12345",
-        "password2": "test12345",
-        "birthday": "2000-01-01",
-    }
+from src.apps.users.models import User, UserOutputSchema
 
 
 @pytest.fixture
@@ -31,24 +15,10 @@ def user_login_data() -> dict[str, str]:
     }
 
 
-@pytest_asyncio.fixture
-async def register_user(
-    user_register_data: dict[str, str], session: AsyncSession
-) -> UserOutput:
-    schema = RegisterSchema(**user_register_data)
-    return await UserService.register_user(schema=schema, session=session)
-
-
-@pytest.fixture
-def user_bearer_token_header(register_user: UserOutput) -> dict[str, str]:
-    access_token = AuthJWT().create_access_token(subject=register_user.json())
-    return {"Authorization": f"Bearer {access_token}"}
-
-
 @pytest.mark.asyncio
 async def test_user_can_login(
     client: AsyncClient,
-    register_user: UserOutput,
+    register_user: UserOutputSchema,
     user_login_data: dict[str, str],
     session: AsyncSession,
 ):
@@ -78,7 +48,7 @@ async def test_user_can_register(
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_users_list(
     client: AsyncClient,
-    register_user: UserOutput,
+    register_user: UserOutputSchema,
     user_bearer_token_header: dict[str, str],
     session: AsyncSession,
 ):
@@ -92,7 +62,7 @@ async def test_authenticated_user_can_get_users_list(
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_his_profile(
     client: AsyncClient,
-    register_user: UserOutput,
+    register_user: UserOutputSchema,
     user_bearer_token_header: dict[str, str],
     session: AsyncSession,
 ):
@@ -107,7 +77,7 @@ async def test_authenticated_user_can_get_his_profile(
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_his_profile_by_id(
     client: AsyncClient,
-    register_user: UserOutput,
+    register_user: UserOutputSchema,
     user_bearer_token_header: dict[str, str],
     session: AsyncSession,
 ):
@@ -122,7 +92,7 @@ async def test_authenticated_user_can_get_his_profile_by_id(
 @pytest.mark.asyncio
 async def test_anonymous_user_cannot_get_users_list(
     client: AsyncClient,
-    register_user: UserOutput,
+    register_user: UserOutputSchema,
     session: AsyncSession,
 ):
     response: Response = await client.get("/users/")
@@ -136,7 +106,7 @@ async def test_anonymous_user_cannot_get_users_list(
 @pytest.mark.asyncio
 async def test_anonymous_user_cannot_get_users_profile(
     client: AsyncClient,
-    register_user: UserOutput,
+    register_user: UserOutputSchema,
     session: AsyncSession,
 ):
     response: Response = await client.get("/users/profile/")
@@ -150,7 +120,7 @@ async def test_anonymous_user_cannot_get_users_profile(
 @pytest.mark.asyncio
 async def test_anonymous_user_cannot_get_users_profile_by_id(
     client: AsyncClient,
-    register_user: UserOutput,
+    register_user: UserOutputSchema,
     session: AsyncSession,
 ):
     response: Response = await client.get(f"/users/{register_user.id}/")

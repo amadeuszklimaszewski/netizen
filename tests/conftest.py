@@ -10,8 +10,8 @@ from sqlmodel import SQLModel
 
 from main import app
 from src.settings import Settings
+from src.settings.alembic import *
 from src.database.connection import get_db
-from src.apps.users.models import User
 
 
 @pytest.fixture(scope="session")
