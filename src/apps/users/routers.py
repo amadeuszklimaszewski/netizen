@@ -27,9 +27,8 @@ async def register_user(
     user_service: UserService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
-    user_schema = await user_service.register_user(
-        user_register_schema, session=session
-    )
+    user = await user_service.register_user(user_register_schema, session=session)
+    user_schema = User.from_orm(user)
     email = user_schema.email
     background_tasks.add_task(user_service.send_activation_email, email)
     return user_schema

@@ -19,9 +19,7 @@ class UserService:
         return pwd_context.hash(password)
 
     @classmethod
-    async def register_user(
-        cls, schema: RegisterSchema, session: AsyncSession
-    ) -> UserOutputSchema:
+    async def register_user(cls, schema: RegisterSchema, session: AsyncSession) -> User:
         user_data = schema.dict()
         user_data.pop("password2")
         user_data["hashed_password"] = await cls._hash_password(
@@ -42,7 +40,7 @@ class UserService:
         session.add(new_user)
         await session.commit()
         await session.refresh(new_user)
-        return User.from_orm(new_user)
+        return new_user
 
     @classmethod
     async def authenticate(

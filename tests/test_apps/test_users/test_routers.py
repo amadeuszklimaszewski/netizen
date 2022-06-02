@@ -18,7 +18,7 @@ def user_login_data() -> dict[str, str]:
 @pytest.mark.asyncio
 async def test_user_can_login(
     client: AsyncClient,
-    register_user: UserOutputSchema,
+    register_user: User,
     user_login_data: dict[str, str],
     session: AsyncSession,
 ):
@@ -48,7 +48,7 @@ async def test_user_can_register(
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_users_list(
     client: AsyncClient,
-    register_user: UserOutputSchema,
+    register_user: User,
     user_bearer_token_header: dict[str, str],
     session: AsyncSession,
 ):
@@ -62,7 +62,7 @@ async def test_authenticated_user_can_get_users_list(
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_his_profile(
     client: AsyncClient,
-    register_user: UserOutputSchema,
+    register_user: User,
     user_bearer_token_header: dict[str, str],
     session: AsyncSession,
 ):
@@ -77,7 +77,7 @@ async def test_authenticated_user_can_get_his_profile(
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_his_profile_by_id(
     client: AsyncClient,
-    register_user: UserOutputSchema,
+    register_user: User,
     user_bearer_token_header: dict[str, str],
     session: AsyncSession,
 ):
@@ -92,7 +92,7 @@ async def test_authenticated_user_can_get_his_profile_by_id(
 @pytest.mark.asyncio
 async def test_anonymous_user_cannot_get_users_list(
     client: AsyncClient,
-    register_user: UserOutputSchema,
+    register_user: User,
     session: AsyncSession,
 ):
     response: Response = await client.get("/users/")
@@ -106,7 +106,7 @@ async def test_anonymous_user_cannot_get_users_list(
 @pytest.mark.asyncio
 async def test_anonymous_user_cannot_get_users_profile(
     client: AsyncClient,
-    register_user: UserOutputSchema,
+    register_user: User,
     session: AsyncSession,
 ):
     response: Response = await client.get("/users/profile/")
@@ -120,7 +120,7 @@ async def test_anonymous_user_cannot_get_users_profile(
 @pytest.mark.asyncio
 async def test_anonymous_user_cannot_get_users_profile_by_id(
     client: AsyncClient,
-    register_user: UserOutputSchema,
+    register_user: User,
     session: AsyncSession,
 ):
     response: Response = await client.get(f"/users/{register_user.id}/")
