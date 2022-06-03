@@ -68,10 +68,10 @@ async def create_group(
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ) -> GroupOutputSchema:
-    group_schema = await group_service.create_group(
+    group = await group_service.create_group(
         schema=group_input_schema, user=request_user, session=session
     )
-    return group_schema
+    return GroupOutputSchema.from_orm(group)
 
 
 @group_router.put(
@@ -87,18 +87,8 @@ async def update_group(
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ) -> GroupOutputSchema:
-    group = (await session.exec(select(Group).where(Group.id == group_id))).first()
-    membership: GroupMembership = (
-        await session.exec(
-            select(GroupMembership).where(GroupMembership.group_id == group_id)
-        )
-    ).first()
-    # if membership.user != request_user:
-    #     return HTTPResponse(
-    #         status=status.HTTP_401_UNAUTHORIZED, content="User unauthorized"
-    #     )
     updated_group = await group_service.update_group(
-        schema=update_schema, group=group, user=request_user, session=session
+        schema=update_schema, group_id=group_id, user=request_user, session=session
     )
     return GroupOutputSchema.from_orm(updated_group)
 

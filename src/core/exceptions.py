@@ -12,3 +12,7 @@ class AuthException(APIException):
 
 class InvalidCredentials(AuthException):
     pass
+
+
+class PermissionDenied(AuthException):
+    pass

@@ -1,6 +1,8 @@
-from sqlmodel import select, update
+from uuid import UUID
+from sqlmodel import select, update, and_
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.core.exceptions import PermissionDenied
 from src.apps.groups.enums import GroupMemberStatus
 from src.apps.groups.models import Group, GroupInputSchema, GroupMembership
 from src.apps.users.models import User
@@ -42,15 +44,27 @@ class GroupService:
         )
 
         await session.refresh(group)
-        return Group.from_orm(group)
+        return group
 
     @classmethod
     async def update_group(
-        cls, schema: GroupInputSchema, group: Group, user: User, session: AsyncSession
+        cls, schema: GroupInputSchema, group_id: UUID, user: User, session: AsyncSession
     ):
+        membership: GroupMembership = (
+            await session.exec(
+                select(GroupMembership).where(
+                    and_(
+                        GroupMembership.group_id == group_id,
+                        GroupMembership.user_id == user.id,
+                    )
+                )
+            )
+        ).first()
+        if not membership or membership.membership_status != "ADMIN":
+            raise PermissionDenied
+
         update_data = schema.dict()
         await session.exec(
-            update(Group).where(Group.id == group.id).values(**update_data)
+            update(Group).where(Group.id == group_id).values(**update_data)
         )
-        await session.refresh(group)
-        return group
+        return (await session.exec(select(Group).where(Group.id == group_id))).first()
