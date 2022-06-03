@@ -27,12 +27,12 @@ def group_create_data() -> dict[str, str]:
 @pytest_asyncio.fixture
 async def group_in_db(
     group_create_data: dict[str, str],
-    register_user: User,
+    user_in_db: User,
     session: AsyncSession,
 ) -> GroupOutputSchema:
     schema = GroupInputSchema(**group_create_data)
     return await GroupService.create_group(
-        schema=schema, user=register_user, session=session
+        schema=schema, user=user_in_db, session=session
     )
 
 

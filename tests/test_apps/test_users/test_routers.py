@@ -18,7 +18,7 @@ def user_login_data() -> dict[str, str]:
 @pytest.mark.asyncio
 async def test_user_can_login(
     client: AsyncClient,
-    register_user: User,
+    user_in_db: User,
     user_login_data: dict[str, str],
     session: AsyncSession,
 ):
@@ -48,7 +48,7 @@ async def test_user_can_register(
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_users_list(
     client: AsyncClient,
-    register_user: User,
+    user_in_db: User,
     user_bearer_token_header: dict[str, str],
     session: AsyncSession,
 ):
@@ -62,7 +62,7 @@ async def test_authenticated_user_can_get_users_list(
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_his_profile(
     client: AsyncClient,
-    register_user: User,
+    user_in_db: User,
     user_bearer_token_header: dict[str, str],
     session: AsyncSession,
 ):
@@ -70,29 +70,29 @@ async def test_authenticated_user_can_get_his_profile(
         "/users/profile/", headers=user_bearer_token_header
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["username"] == register_user.username
-    assert response.json()["id"] == str(register_user.id)
+    assert response.json()["username"] == user_in_db.username
+    assert response.json()["id"] == str(user_in_db.id)
 
 
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_his_profile_by_id(
     client: AsyncClient,
-    register_user: User,
+    user_in_db: User,
     user_bearer_token_header: dict[str, str],
     session: AsyncSession,
 ):
     response: Response = await client.get(
-        f"/users/{register_user.id}/", headers=user_bearer_token_header
+        f"/users/{user_in_db.id}/", headers=user_bearer_token_header
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["username"] == register_user.username
-    assert response.json()["id"] == str(register_user.id)
+    assert response.json()["username"] == user_in_db.username
+    assert response.json()["id"] == str(user_in_db.id)
 
 
 @pytest.mark.asyncio
 async def test_anonymous_user_cannot_get_users_list(
     client: AsyncClient,
-    register_user: User,
+    user_in_db: User,
     session: AsyncSession,
 ):
     response: Response = await client.get("/users/")
@@ -106,7 +106,7 @@ async def test_anonymous_user_cannot_get_users_list(
 @pytest.mark.asyncio
 async def test_anonymous_user_cannot_get_users_profile(
     client: AsyncClient,
-    register_user: User,
+    user_in_db: User,
     session: AsyncSession,
 ):
     response: Response = await client.get("/users/profile/")
@@ -120,10 +120,10 @@ async def test_anonymous_user_cannot_get_users_profile(
 @pytest.mark.asyncio
 async def test_anonymous_user_cannot_get_users_profile_by_id(
     client: AsyncClient,
-    register_user: User,
+    user_in_db: User,
     session: AsyncSession,
 ):
-    response: Response = await client.get(f"/users/{register_user.id}/")
+    response: Response = await client.get(f"/users/{user_in_db.id}/")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     response_body = response.json()
