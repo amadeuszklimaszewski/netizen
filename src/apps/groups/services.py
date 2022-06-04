@@ -1,6 +1,6 @@
 from typing import Union
 from uuid import UUID
-from sqlmodel import select, update, and_, or_
+from sqlmodel import select, update, and_, or_, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.exceptions import PermissionDenied
@@ -48,10 +48,10 @@ class GroupService:
         return group
 
     @classmethod
-    async def update_group(
-        cls, schema: GroupInputSchema, group_id: UUID, user: User, session: AsyncSession
-    ) -> Group:
-        membership: GroupMembership = (
+    async def _check_user_permissions(
+        cls, group_id: UUID, user: User, session: AsyncSession
+    ):
+        membership: Union[GroupMembership, None] = (
             await session.exec(
                 select(GroupMembership).where(
                     and_(
@@ -64,11 +64,25 @@ class GroupService:
         if not membership or membership.membership_status != "ADMIN":
             raise PermissionDenied
 
+    @classmethod
+    async def update_group(
+        cls, schema: GroupInputSchema, group_id: UUID, user: User, session: AsyncSession
+    ) -> Group:
+        await cls._check_user_permissions(group_id=group_id, user=user, session=session)
+
         update_data = schema.dict()
         await session.exec(
             update(Group).where(Group.id == group_id).values(**update_data)
         )
         return (await session.exec(select(Group).where(Group.id == group_id))).first()
+
+    @classmethod
+    async def delete_group(cls, group_id: UUID, user: User, session: AsyncSession):
+        await cls._check_user_permissions(group_id=group_id, user=user, session=session)
+        group = (await session.exec(select(Group).where(Group.id == group_id))).first()
+        await session.delete(group)
+        await session.commit()
+        return
 
     @classmethod
     async def filter_get_group_list(

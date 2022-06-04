@@ -1,9 +1,6 @@
-from fastapi import Response, status
-from httpx import AsyncClient
 import pytest
-import pytest_asyncio
 from sqlalchemy.orm import selectinload
-from sqlmodel import select
+from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.groups.models import (
@@ -13,12 +10,43 @@ from src.apps.groups.models import (
     GroupOutputSchema,
 )
 from src.apps.groups.services import GroupService
-from src.apps.users.models import User, UserOutputSchema
+from src.apps.users.models import User
+from src.core.exceptions import PermissionDenied
+
+
+@pytest.mark.asyncio
+async def test_check_user_permissions(
+    public_group_in_db: Group,
+    user_in_db: User,
+    other_user_in_db: User,
+    session: AsyncSession,
+):
+    try:
+        await GroupService._check_user_permissions(
+            group_id=public_group_in_db.id, user=user_in_db, session=session
+        )
+    except PermissionDenied as exc:
+        assert False, f"Exception raised: {exc}"
+
+    with pytest.raises(PermissionDenied):
+        await GroupService._check_user_permissions(
+            group_id=public_group_in_db.id, user=other_user_in_db, session=session
+        )
+
+    await session.exec(
+        update(GroupMembership)
+        .where(GroupMembership.user_id == user_in_db.id)
+        .values({"membership_status": "REGULAR"})
+    )
+    await session.refresh(user_in_db)
+    with pytest.raises(PermissionDenied):
+        await GroupService._check_user_permissions(
+            group_id=public_group_in_db.id, user=other_user_in_db, session=session
+        )
 
 
 @pytest.mark.asyncio
 async def test_group_service_correctly_creates_group(
-    client: AsyncClient,
     user_in_db: User,
     group_create_data: dict[str, str],
     session: AsyncSession,
@@ -60,6 +88,29 @@ async def test_group_service_correctly_updates_group(
     assert len(groups) == 1
     group_in_db = groups[0]
     assert group_in_db == group
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_deletes_group(
+    user_in_db: User,
+    public_group_in_db: Group,
+    session: AsyncSession,
+):
+    await GroupService.delete_group(
+        group_id=public_group_in_db.id, user=user_in_db, session=session
+    )
+    memberships = (
+        await session.exec(
+            select(GroupMembership).where(
+                GroupMembership.group_id == public_group_in_db.id
+            )
+        )
+    ).all()
+    assert len(memberships) == 0
+    group = (
+        await session.exec(select(Group).where(Group.id == public_group_in_db.id))
+    ).first()
+    assert group == None
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,8 @@
 from http.client import HTTPResponse
+from tokenize import group
 from uuid import UUID
 from typing import Union
+from bcrypt import re
 from fastapi import BackgroundTasks, Depends, status
 from fastapi.routing import APIRouter
 from fastapi_another_jwt_auth import AuthJWT
@@ -38,7 +40,14 @@ async def get_groups(
     request_user: Union[User, None] = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ) -> list[GroupOutputSchema]:
-    return (await session.exec(select(Group))).all()
+    return [
+        GroupOutputSchema.from_orm(group)
+        for group in (
+            await group_service.filter_get_group_list(
+                request_user=request_user, session=session
+            )
+        )
+    ]
 
 
 @group_router.get(
@@ -53,14 +62,7 @@ async def get_group_by_id(
     request_user: Union[User, None] = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ) -> GroupOutputSchema:
-    return [
-        GroupOutputSchema.from_orm(group)
-        for group in (
-            await group_service.filter_get_group_list(
-                request_user=request_user, session=session
-            )
-        )
-    ]
+    return
 
 
 @group_router.post(
@@ -104,11 +106,15 @@ async def update_group(
     "/{group_id}/", tags=["groups"], status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete_group(
+    group_id: UUID,
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    await group_service.delete_group(
+        group_id=group_id, user=request_user, session=session
+    )
+    return {}
 
 
 @group_router.get(
