@@ -3,6 +3,7 @@ from dateutil.relativedelta import relativedelta
 from typing import Any, TYPE_CHECKING
 from pydantic import validator, validate_email as validate_email_pd
 from sqlmodel import Relationship, SQLModel, Field, Column, String
+from sqlalchemy.orm import relationship
 from src.core.models import TimeStampedUUIDModelBase
 
 if TYPE_CHECKING:
@@ -25,8 +26,20 @@ class UserOutputSchema(TimeStampedUUIDModelBase, UserBase):
 class User(TimeStampedUUIDModelBase, UserBase, table=True):
     hashed_password: str
 
-    membership_requests: list["GroupRequest"] = Relationship(back_populates="user")
-    memberships: list["GroupMembership"] = Relationship(back_populates="user")
+    membership_requests: list["GroupRequest"] = Relationship(
+        sa_relationship=relationship(
+            "GroupRequest",
+            cascade="all, delete",
+            back_populates="user",
+        )
+    )
+    memberships: list["GroupMembership"] = Relationship(
+        sa_relationship=relationship(
+            "GroupMembership",
+            cascade="all, delete",
+            back_populates="user",
+        )
+    )
 
 
 class LoginSchema(SQLModel):

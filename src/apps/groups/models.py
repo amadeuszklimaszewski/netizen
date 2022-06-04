@@ -1,6 +1,7 @@
 from uuid import UUID
 from typing import TYPE_CHECKING, Optional
 from sqlmodel import Field, SQLModel, Relationship, Column, String
+from sqlalchemy.orm import relationship
 from sqlalchemy.types import Enum
 from src.core.models import TimeStampedUUIDModelBase
 from src.apps.groups.enums import GroupMemberStatus, GroupRequestStatus, GroupStatus
@@ -22,8 +23,12 @@ class GroupRequest(TimeStampedUUIDModelBase, table=True):
         )
     )
 
-    group: Optional["Group"] = Relationship(back_populates="requests")
-    user: Optional["User"] = Relationship(back_populates="membership_requests")
+    group: Optional["Group"] = Relationship(
+        sa_relationship=relationship("Group", back_populates="requests")
+    )
+    user: Optional["User"] = Relationship(
+        sa_relationship=relationship("User", back_populates="membership_requests")
+    )
 
 
 class GroupRequestOutputSchema(SQLModel):
@@ -42,8 +47,12 @@ class GroupMembership(TimeStampedUUIDModelBase, table=True):
         )
     )
 
-    group: Optional["Group"] = Relationship(back_populates="members")
-    user: Optional["User"] = Relationship(back_populates="memberships")
+    group: Optional["Group"] = Relationship(
+        sa_relationship=relationship("Group", back_populates="members")
+    )
+    user: Optional["User"] = Relationship(
+        sa_relationship=relationship("User", back_populates="memberships")
+    )
 
 
 class GroupMembershipOutputSchema(SQLModel):
@@ -57,8 +66,20 @@ class Group(TimeStampedUUIDModelBase, table=True):
     description: str
     status: GroupStatus = Field(sa_column=Column(Enum(GroupStatus)))
 
-    requests: list[GroupRequest] = Relationship(back_populates="group")
-    members: list[GroupMembership] = Relationship(back_populates="group")
+    requests: list[GroupRequest] = Relationship(
+        sa_relationship=relationship(
+            "GroupRequest",
+            cascade="all, delete",
+            back_populates="group",
+        )
+    )
+    members: list[GroupMembership] = Relationship(
+        sa_relationship=relationship(
+            "GroupMembership",
+            cascade="all, delete",
+            back_populates="group",
+        )
+    )
 
 
 class GroupOutputSchema(SQLModel):
