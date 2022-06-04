@@ -1,18 +1,11 @@
 from fastapi import status
 from httpx import AsyncClient, Response
 import pytest
-import pytest_asyncio
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.groups.models import (
     Group,
-    GroupInputSchema,
-    GroupMembership,
-    GroupOutputSchema,
 )
-from src.apps.groups.services import GroupService
-from src.apps.users.models import User, UserOutputSchema
 
 
 @pytest.mark.asyncio
@@ -22,6 +15,20 @@ async def test_authenticated_user_can_get_groups_list(
     user_bearer_token_header: dict[str, str],
 ):
     response: Response = await client.get("/groups/", headers=user_bearer_token_header)
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+    assert len(response_body) == 1
+    assert response_body[0]["name"] == public_group_in_db.name
+    assert response_body[0]["description"] == public_group_in_db.description
+    assert response_body[0]["status"] == public_group_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_can_get_groups_list(
+    client: AsyncSession,
+    public_group_in_db: Group,
+):
+    response: Response = await client.get("/groups/")
     assert response.status_code == status.HTTP_200_OK
     response_body = response.json()
     assert len(response_body) == 1
@@ -62,7 +69,7 @@ async def test_anonymous_user_cannot_create_group(
 
 
 @pytest.mark.asyncio
-async def test_authenticated_user_can_update_public_group(
+async def test_admin_can_update_group(
     client: AsyncClient,
     public_group_in_db: Group,
     group_update_data: dict[str, str],
@@ -82,12 +89,30 @@ async def test_authenticated_user_can_update_public_group(
 
 
 @pytest.mark.asyncio
-async def test_anonymous_user_cannot_update_public_group(
+async def test_regular_user_cannot_update_group(
+    client: AsyncClient,
+    other_user_bearer_token_header: dict[str, str],
+    public_group_in_db: Group,
+    group_update_data: dict[str, str],
+):
+    response: Response = await client.put(
+        f"/groups/{public_group_in_db.id}/",
+        json=group_update_data,
+        headers=other_user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_update_group(
     client: AsyncClient,
     public_group_in_db: Group,
     group_update_data: dict[str, str],
 ):
-    response: Response = await client.post(
+    response: Response = await client.put(
         f"/groups/{public_group_in_db.id}/", json=group_update_data
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

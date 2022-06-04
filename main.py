@@ -6,7 +6,7 @@ from fastapi_another_jwt_auth.exceptions import AuthJWTException
 from src.apps.users.routers import user_router
 from src.apps.jwt.routers import jwt_router
 from src.apps.groups.routers import group_router
-from src.core.exceptions import APIException
+from src.core.exceptions import APIException, PermissionDenied
 
 app = FastAPI(title="Netizen", description="API for a social network", version="1.0")
 
@@ -21,6 +21,13 @@ app.include_router(router)
 @app.get("/")
 async def root():
     return {"message": "Hello world"}
+
+
+@app.exception_handler(PermissionDenied)
+def api_error_handler(request: Request, exc: APIException):
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": str(exc)}
+    )
 
 
 @app.exception_handler(APIException)

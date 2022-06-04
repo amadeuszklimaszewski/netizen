@@ -1,5 +1,6 @@
+from typing import Union
 from uuid import UUID
-from sqlmodel import select, update, and_
+from sqlmodel import select, update, and_, or_
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.exceptions import PermissionDenied
@@ -68,3 +69,22 @@ class GroupService:
             update(Group).where(Group.id == group_id).values(**update_data)
         )
         return (await session.exec(select(Group).where(Group.id == group_id))).first()
+
+    @classmethod
+    async def filter_get_group_list(
+        cls,
+        request_user: Union[User, None],
+        session: AsyncSession,
+    ):
+        if not request_user:
+            return (
+                await session.exec(select(Group).where(Group.status != "CLOSED"))
+            ).all()
+        return (
+            await session.exec(
+                select(Group)
+                .join(Group.members)
+                .join(GroupMembership.user)
+                .where(or_(User.id == request_user.id, Group.status != "CLOSED"))
+            )
+        ).all()
