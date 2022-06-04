@@ -2,7 +2,7 @@ from fastapi import status
 from httpx import AsyncClient, Response
 import pytest
 from sqlmodel.ext.asyncio.session import AsyncSession
-
+from sqlmodel import select
 from src.apps.groups.models import (
     Group,
 )

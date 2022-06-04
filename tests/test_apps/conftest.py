@@ -99,6 +99,7 @@ async def private_group_in_db(
     session: AsyncSession,
 ) -> GroupOutputSchema:
     schema = GroupInputSchema(**group_create_data)
+    schema.name = "test private"
     schema.status = "PRIVATE"
     return await GroupService.create_group(
         schema=schema, user=user_in_db, session=session
@@ -112,6 +113,7 @@ async def closed_group_in_db(
     session: AsyncSession,
 ) -> GroupOutputSchema:
     schema = GroupInputSchema(**group_create_data)
+    schema.name = "test closed"
     schema.status = "CLOSED"
     return await GroupService.create_group(
         schema=schema, user=user_in_db, session=session

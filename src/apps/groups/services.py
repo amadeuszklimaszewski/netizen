@@ -17,7 +17,7 @@ class GroupService:
         user: User,
         membership_status: GroupMemberStatus,
         session: AsyncSession,
-    ):
+    ) -> GroupMembership:
         membership = GroupMembership(
             group_id=group.id,
             user_id=user.id,
@@ -31,7 +31,7 @@ class GroupService:
     @classmethod
     async def create_group(
         cls, schema: GroupInputSchema, user: User, session: AsyncSession
-    ):
+    ) -> Group:
         group_data = schema.dict()
         group = Group(**group_data)
         session.add(group)
@@ -50,7 +50,7 @@ class GroupService:
     @classmethod
     async def update_group(
         cls, schema: GroupInputSchema, group_id: UUID, user: User, session: AsyncSession
-    ):
+    ) -> Group:
         membership: GroupMembership = (
             await session.exec(
                 select(GroupMembership).where(
@@ -75,7 +75,7 @@ class GroupService:
         cls,
         request_user: Union[User, None],
         session: AsyncSession,
-    ):
+    ) -> list[Group]:
         if not request_user:
             return (
                 await session.exec(select(Group).where(Group.status != "CLOSED"))
