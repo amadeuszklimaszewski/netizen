@@ -8,8 +8,8 @@ from src.apps.users.models import (
 )
 from src.apps.users.utils import pwd_context
 from src.core.exceptions import (
-    AlreadyExists,
-    InvalidCredentials,
+    AlreadyExistsException,
+    InvalidCredentialsException,
 )
 
 
@@ -29,12 +29,12 @@ class UserService:
             select(User).where(User.username == user_data["username"])
         )
         if email_result.first():
-            raise AlreadyExists("Email already in use!")
+            raise AlreadyExistsException("Email already in use!")
         username_result = await session.exec(
             select(User).where(User.username == user_data["username"])
         )
         if username_result.first():
-            raise AlreadyExists("Username already taken!")
+            raise AlreadyExistsException("Username already taken!")
         new_user = User(**user_data)
 
         session.add(new_user)
@@ -49,7 +49,7 @@ class UserService:
         result = await session.exec(select(User).where(User.email == email))
         user: User = result.first()
         if user is None or not pwd_context.verify(password, user.hashed_password):
-            raise InvalidCredentials("No matches with given token")
+            raise InvalidCredentialsException("No matches with given token")
         return user
 
     @classmethod

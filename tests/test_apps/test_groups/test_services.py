@@ -1,3 +1,4 @@
+from unicodedata import name
 import pytest
 from sqlalchemy.orm import selectinload
 from sqlmodel import select, update
@@ -11,7 +12,7 @@ from src.apps.groups.models import (
 )
 from src.apps.groups.services import GroupService
 from src.apps.users.models import User
-from src.core.exceptions import PermissionDenied
+from src.core.exceptions import PermissionDeniedException
 
 
 @pytest.mark.asyncio
@@ -25,10 +26,10 @@ async def test_check_user_permissions(
         await GroupService._check_user_permissions(
             group_id=public_group_in_db.id, user=user_in_db, session=session
         )
-    except PermissionDenied as exc:
+    except PermissionDeniedException as exc:
         assert False, f"Exception raised: {exc}"
 
-    with pytest.raises(PermissionDenied):
+    with pytest.raises(PermissionDeniedException):
         await GroupService._check_user_permissions(
             group_id=public_group_in_db.id, user=other_user_in_db, session=session
         )
@@ -39,7 +40,7 @@ async def test_check_user_permissions(
         .values({"membership_status": "REGULAR"})
     )
     await session.refresh(user_in_db)
-    with pytest.raises(PermissionDenied):
+    with pytest.raises(PermissionDeniedException):
         await GroupService._check_user_permissions(
             group_id=public_group_in_db.id, user=other_user_in_db, session=session
         )
@@ -200,3 +201,66 @@ async def test_group_service_correctly_filters_groups_with_user_in_closed_group(
     assert public_group_in_db in groups
     assert private_group_in_db in groups
     assert closed_group_in_db in groups
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_group_by_id(
+    user_in_db: User,
+    other_user_in_db: User,
+    public_group_in_db: Group,
+    private_group_in_db: Group,
+    closed_group_in_db: Group,
+    session: AsyncSession,
+):
+    group = await GroupService.filter_get_group_by_id(
+        group_id=public_group_in_db.id, request_user=user_in_db, session=session
+    )
+    assert group.name == public_group_in_db.name
+    assert group.description == public_group_in_db.description
+    assert group.status == public_group_in_db.status
+
+    closed_group = await GroupService.filter_get_group_by_id(
+        group_id=closed_group_in_db.id, request_user=user_in_db, session=session
+    )
+    assert closed_group.name == closed_group_in_db.name
+    assert closed_group.description == closed_group_in_db.description
+    assert closed_group.status == closed_group_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_public_group_by_id_with_no_user(
+    public_group_in_db: Group,
+    private_group_in_db: Group,
+    session: AsyncSession,
+):
+    group = await GroupService.filter_get_group_by_id(
+        group_id=public_group_in_db.id, request_user=None, session=session
+    )
+    assert group.name == public_group_in_db.name
+    assert group.description == public_group_in_db.description
+    assert group.status == public_group_in_db.status
+
+    private_group = await GroupService.filter_get_group_by_id(
+        group_id=private_group_in_db.id, request_user=None, session=session
+    )
+    assert private_group.name == private_group_in_db.name
+    assert private_group.description == private_group_in_db.description
+    assert private_group.status == private_group_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_group_service_raises_permission_denied_exception_with_closed_group(
+    other_user_in_db: User,
+    closed_group_in_db: Group,
+    session: AsyncSession,
+):
+    with pytest.raises(PermissionDeniedException):
+        group = await GroupService.filter_get_group_by_id(
+            group_id=closed_group_in_db.id,
+            request_user=other_user_in_db,
+            session=session,
+        )
+    with pytest.raises(PermissionDeniedException):
+        group = await GroupService.filter_get_group_by_id(
+            group_id=closed_group_in_db.id, request_user=None, session=session
+        )

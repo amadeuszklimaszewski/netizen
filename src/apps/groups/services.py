@@ -3,10 +3,11 @@ from uuid import UUID
 from sqlmodel import select, update, and_, or_, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.core.exceptions import PermissionDenied
+from src.core.exceptions import PermissionDeniedException
 from src.apps.groups.enums import GroupMemberStatus
 from src.apps.groups.models import Group, GroupInputSchema, GroupMembership
 from src.apps.users.models import User
+from src.core.utils import get_object_by_id
 
 
 class GroupService:
@@ -48,26 +49,36 @@ class GroupService:
         return group
 
     @classmethod
-    async def _check_user_permissions(
-        cls, group_id: UUID, user: User, session: AsyncSession
+    async def _find_membership(
+        cls, group_id: UUID, user_id: UUID, session: AsyncSession
     ):
         membership: Union[GroupMembership, None] = (
             await session.exec(
                 select(GroupMembership).where(
                     and_(
                         GroupMembership.group_id == group_id,
-                        GroupMembership.user_id == user.id,
+                        GroupMembership.user_id == user_id,
                     )
                 )
             )
         ).first()
+        return membership
+
+    @classmethod
+    async def _check_user_permissions(
+        cls, group_id: UUID, user: User, session: AsyncSession
+    ):
+        membership = await cls._find_membership(
+            group_id=group_id, user_id=user.id, session=session
+        )
         if not membership or membership.membership_status != "ADMIN":
-            raise PermissionDenied
+            raise PermissionDeniedException
 
     @classmethod
     async def update_group(
         cls, schema: GroupInputSchema, group_id: UUID, user: User, session: AsyncSession
     ) -> Group:
+        await get_object_by_id(Table=Group, id=group_id, session=session)
         await cls._check_user_permissions(group_id=group_id, user=user, session=session)
 
         update_data = schema.dict()
@@ -78,6 +89,7 @@ class GroupService:
 
     @classmethod
     async def delete_group(cls, group_id: UUID, user: User, session: AsyncSession):
+        await get_object_by_id(Table=Group, id=group_id, session=session)
         await cls._check_user_permissions(group_id=group_id, user=user, session=session)
         group = (await session.exec(select(Group).where(Group.id == group_id))).first()
         await session.delete(group)
@@ -102,3 +114,21 @@ class GroupService:
                 .where(or_(User.id == request_user.id, Group.status != "CLOSED"))
             )
         ).all()
+
+    @classmethod
+    async def filter_get_group_by_id(
+        cls,
+        group_id: UUID,
+        request_user: Union[User, None],
+        session: AsyncSession,
+    ) -> Group:
+        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
+        if not request_user and group.status == "CLOSED":
+            raise PermissionDeniedException
+        if request_user and group.status == "CLOSED":
+            membership = await cls._find_membership(
+                group_id=group.id, user_id=request_user.id, session=session
+            )
+            if membership is None:
+                raise PermissionDeniedException
+        return group

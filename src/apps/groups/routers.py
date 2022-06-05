@@ -1,18 +1,14 @@
-from http.client import HTTPResponse
-from tokenize import group
 from uuid import UUID
 from typing import Union
-from bcrypt import re
-from fastapi import BackgroundTasks, Depends, status
+
+from fastapi import Depends, status
 from fastapi.routing import APIRouter
-from fastapi_another_jwt_auth import AuthJWT
-
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.apps.users.models import User
-from src.database.connection import get_db
-from src.dependencies.users import authenticate_user, get_user_or_none
 
+from src.database.connection import get_db
+from src.core.utils import get_object_by_id
+from src.apps.users.models import User
+from src.dependencies.users import authenticate_user, get_user_or_none
 from src.apps.groups.models import (
     GroupMembership,
     GroupMembershipOutputSchema,
@@ -62,7 +58,11 @@ async def get_group_by_id(
     request_user: Union[User, None] = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ) -> GroupOutputSchema:
-    return
+    return GroupOutputSchema.from_orm(
+        await group_service.filter_get_group_by_id(
+            group_id=group_id, request_user=request_user, session=session
+        )
+    )
 
 
 @group_router.post(

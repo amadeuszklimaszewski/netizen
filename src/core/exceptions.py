@@ -2,7 +2,15 @@ class APIException(Exception):
     pass
 
 
-class AlreadyExists(APIException):
+class AlreadyExistsException(APIException):
+    pass
+
+
+class DoesNotExistException(APIException):
+    pass
+
+
+class InvalidTableException(APIException):
     pass
 
 
@@ -10,9 +18,9 @@ class AuthException(APIException):
     pass
 
 
-class InvalidCredentials(AuthException):
+class InvalidCredentialsException(AuthException):
     pass
 
 
-class PermissionDenied(AuthException):
+class PermissionDeniedException(AuthException):
     pass

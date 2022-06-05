@@ -38,6 +38,38 @@ async def test_anonymous_user_can_get_groups_list(
 
 
 @pytest.mark.asyncio
+async def test_authenticated_user_can_get_group_by_id(
+    client: AsyncSession,
+    public_group_in_db: Group,
+    user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.get(
+        f"/groups/{public_group_in_db.id}/", headers=user_bearer_token_header
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+
+    assert response_body["name"] == public_group_in_db.name
+    assert response_body["description"] == public_group_in_db.description
+    assert response_body["status"] == public_group_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_can_get_group_by_id(
+    client: AsyncSession,
+    public_group_in_db: Group,
+    user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.get(f"/groups/{public_group_in_db.id}/")
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+
+    assert response_body["name"] == public_group_in_db.name
+    assert response_body["description"] == public_group_in_db.description
+    assert response_body["status"] == public_group_in_db.status
+
+
+@pytest.mark.asyncio
 async def test_authenticated_user_can_create_group(
     client: AsyncClient,
     group_create_data: dict[str, str],

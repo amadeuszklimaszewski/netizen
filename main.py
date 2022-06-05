@@ -6,7 +6,11 @@ from fastapi_another_jwt_auth.exceptions import AuthJWTException
 from src.apps.users.routers import user_router
 from src.apps.jwt.routers import jwt_router
 from src.apps.groups.routers import group_router
-from src.core.exceptions import APIException, PermissionDenied
+from src.core.exceptions import (
+    APIException,
+    DoesNotExistException,
+    PermissionDeniedException,
+)
 
 app = FastAPI(title="Netizen", description="API for a social network", version="1.0")
 
@@ -23,7 +27,17 @@ async def root():
     return {"message": "Hello world"}
 
 
-@app.exception_handler(PermissionDenied)
+# ----- Exception handlers -----
+
+
+@app.exception_handler(DoesNotExistException)
+def api_error_handler(request: Request, exc: APIException):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)}
+    )
+
+
+@app.exception_handler(PermissionDeniedException)
 def api_error_handler(request: Request, exc: APIException):
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": str(exc)}
