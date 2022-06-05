@@ -1,5 +1,6 @@
 from unicodedata import name
 import pytest
+from sqlalchemy import and_
 from sqlalchemy.orm import selectinload
 from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -12,7 +13,7 @@ from src.apps.groups.models import (
 )
 from src.apps.groups.services import GroupService
 from src.apps.users.models import User
-from src.core.exceptions import PermissionDeniedException
+from src.core.exceptions import DoesNotExistException, PermissionDeniedException
 
 
 @pytest.mark.asyncio
@@ -278,3 +279,37 @@ async def test_group_service_correctly_creates_group_request(
     assert request.user == user_in_db
     assert request.group == public_group_in_db
     assert request.status == "PENDING"
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_removes_user_from_group(
+    user_in_db: User,
+    public_group_in_db: Group,
+    session: AsyncSession,
+):
+    await GroupService.remove_user_from_group(
+        group_id=public_group_in_db.id, user=user_in_db, session=session
+    )
+    membership = (
+        await session.exec(
+            select(GroupMembership).where(
+                and_(
+                    GroupMembership.user_id == user_in_db.id,
+                    GroupMembership.group_id == public_group_in_db.id,
+                )
+            )
+        )
+    ).first()
+    assert membership == None
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_removes_user_from_group(
+    other_user_in_db: User,
+    public_group_in_db: Group,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        await GroupService.remove_user_from_group(
+            group_id=public_group_in_db.id, user=other_user_in_db, session=session
+        )

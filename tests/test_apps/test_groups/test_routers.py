@@ -215,3 +215,29 @@ async def test_anonymous_user_cannot_request_to_join_group(
 
     response_body = response.json()
     assert len(response_body) == 1
+
+
+@pytest.mark.asyncio
+async def test_authenticated_user_can_leave_group(
+    client: AsyncClient,
+    user_bearer_token_header: dict[str, str],
+    public_group_in_db: Group,
+):
+    response: Response = await client.delete(
+        f"/groups/{public_group_in_db.id}/leave/", headers=user_bearer_token_header
+    )
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_leave_group(
+    client: AsyncClient,
+    public_group_in_db: Group,
+):
+    response: Response = await client.delete(
+        f"/groups/{public_group_in_db.id}/leave/",
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1

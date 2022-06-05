@@ -146,7 +146,10 @@ async def leave_group(
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    await group_service.remove_user_from_group(
+        group_id=group_id, user=request_user, session=session
+    )
+    return {}
 
 
 @group_router.get(

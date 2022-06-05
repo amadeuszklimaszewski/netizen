@@ -3,7 +3,11 @@ from uuid import UUID
 from sqlmodel import select, update, and_, or_, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.core.exceptions import PermissionDeniedException
+from src.core.exceptions import (
+    AlreadyExistsException,
+    PermissionDeniedException,
+    DoesNotExistException,
+)
 from src.apps.groups.enums import GroupMemberStatus
 from src.apps.groups.models import (
     Group,
@@ -56,7 +60,7 @@ class GroupService:
     @classmethod
     async def _find_membership(
         cls, group_id: UUID, user_id: UUID, session: AsyncSession
-    ):
+    ) -> Union[GroupMembership, None]:
         membership: Union[GroupMembership, None] = (
             await session.exec(
                 select(GroupMembership).where(
@@ -132,10 +136,12 @@ class GroupService:
             raise PermissionDeniedException
         if request_user and group.status == "CLOSED":
             membership = await cls._find_membership(
-                group_id=group.id, user_id=request_user.id, session=session
+                group_id=group_id, user_id=request_user.id, session=session
             )
             if membership is None:
-                raise PermissionDeniedException
+                raise PermissionDeniedException(
+                    "Invalid request. User is not a member of this group"
+                )
         return group
 
     @classmethod
@@ -143,8 +149,29 @@ class GroupService:
         cls, group_id: UUID, request_user: User, session: AsyncSession
     ) -> GroupRequest:
         group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
+
+        if not await cls._find_membership(
+            group_id=group.id, user_id=request_user.id, session=session
+        ):
+            raise AlreadyExistsException("User is already a member of this group")
+
         request = GroupRequest(group=group, user=request_user, status="PENDING")
         session.add(request)
         await session.commit()
         await session.refresh(request)
         return request
+
+    @classmethod
+    async def remove_user_from_group(
+        cls, group_id: UUID, user: User, session: AsyncSession
+    ):
+        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
+
+        membership: GroupMembership = await cls._find_membership(
+            group_id=group.id, user_id=user.id, session=session
+        )
+        if membership is None:
+            raise DoesNotExistException("User is not a member of this group")
+        await session.delete(membership)
+        await session.commit()
+        return
