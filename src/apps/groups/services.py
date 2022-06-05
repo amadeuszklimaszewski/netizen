@@ -5,7 +5,12 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.exceptions import PermissionDeniedException
 from src.apps.groups.enums import GroupMemberStatus
-from src.apps.groups.models import Group, GroupInputSchema, GroupMembership
+from src.apps.groups.models import (
+    Group,
+    GroupInputSchema,
+    GroupMembership,
+    GroupRequest,
+)
 from src.apps.users.models import User
 from src.core.utils import get_object_by_id
 
@@ -132,3 +137,14 @@ class GroupService:
             if membership is None:
                 raise PermissionDeniedException
         return group
+
+    @classmethod
+    async def create_group_request(
+        cls, group_id: UUID, request_user: User, session: AsyncSession
+    ) -> GroupRequest:
+        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
+        request = GroupRequest(group=group, user=request_user, status="PENDING")
+        session.add(request)
+        await session.commit()
+        await session.refresh(request)
+        return request

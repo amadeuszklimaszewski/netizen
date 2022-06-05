@@ -6,6 +6,7 @@ from sqlmodel import select
 from src.apps.groups.models import (
     Group,
 )
+from src.apps.users.models import User
 
 
 @pytest.mark.asyncio
@@ -175,9 +176,42 @@ async def test_anonymous_user_cannot_delete_group(
     public_group_in_db: Group,
     group_update_data: dict[str, str],
 ):
-    response: Response = await client.put(f"/groups/{public_group_in_db.id}/")
+    response: Response = await client.delete(f"/groups/{public_group_in_db.id}/")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     response_body = response.json()
     assert len(response_body) == 1
     assert response_body["detail"] == "Missing Authorization Header"
+
+
+@pytest.mark.asyncio
+async def test_authenticated_user_can_request_to_join_group(
+    client: AsyncClient,
+    user_in_db: User,
+    user_bearer_token_header: dict[str, str],
+    public_group_in_db: Group,
+):
+    response: Response = await client.post(
+        f"/groups/{public_group_in_db.id}/join/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+    response_body = response.json()
+    assert response_body["group_id"] == str(public_group_in_db.id)
+    assert response_body["user_id"] == str(user_in_db.id)
+    assert response_body["status"] == "PENDING"
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_request_to_join_group(
+    client: AsyncClient,
+    public_group_in_db: Group,
+):
+    response: Response = await client.post(
+        f"/groups/{public_group_in_db.id}/join/",
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1

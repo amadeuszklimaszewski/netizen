@@ -264,3 +264,17 @@ async def test_group_service_raises_permission_denied_exception_with_closed_grou
         group = await GroupService.filter_get_group_by_id(
             group_id=closed_group_in_db.id, request_user=None, session=session
         )
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_creates_group_request(
+    user_in_db: User,
+    public_group_in_db: Group,
+    session: AsyncSession,
+):
+    request = await GroupService.create_group_request(
+        group_id=public_group_in_db.id, request_user=user_in_db, session=session
+    )
+    assert request.user == user_in_db
+    assert request.group == public_group_in_db
+    assert request.status == "PENDING"

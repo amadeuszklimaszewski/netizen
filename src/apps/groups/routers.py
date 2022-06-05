@@ -117,6 +117,38 @@ async def delete_group(
     return {}
 
 
+@group_router.post(
+    "/{group_id}/join/",
+    tags=["groups"],
+    status_code=status.HTTP_201_CREATED,
+    response_model=GroupRequestOutputSchema,
+)
+async def join_to_group(
+    group_id: UUID,
+    group_service: GroupService = Depends(),
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
+    request = await group_service.create_group_request(
+        group_id=group_id, request_user=request_user, session=session
+    )
+    return GroupRequestOutputSchema.from_orm(request)
+
+
+@group_router.delete(
+    "/{group_id}/leave/",
+    tags=["groups"],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def leave_group(
+    group_id: UUID,
+    group_service: GroupService = Depends(),
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
+    ...
+
+
 @group_router.get(
     "/{group_id}/requests/",
     tags=["groups"],
@@ -157,35 +189,6 @@ async def get_group_request_by_id(
 async def update_group_request(
     group_id: UUID,
     request_id: UUID,
-    group_service: GroupService = Depends(),
-    request_user: User = Depends(authenticate_user),
-    session: AsyncSession = Depends(get_db),
-):
-    ...
-
-
-@group_router.post(
-    "/{group_id}/",
-    tags=["groups"],
-    status_code=status.HTTP_201_CREATED,
-    response_model=GroupRequestOutputSchema,
-)
-async def join_to_group(
-    group_id: UUID,
-    group_service: GroupService = Depends(),
-    request_user: User = Depends(authenticate_user),
-    session: AsyncSession = Depends(get_db),
-):
-    ...
-
-
-@group_router.delete(
-    "/{group_id}/",
-    tags=["groups"],
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-async def leave_group(
-    group_id: UUID,
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
