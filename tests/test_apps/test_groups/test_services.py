@@ -1,4 +1,4 @@
-from unicodedata import name
+from uuid import uuid4
 import pytest
 from sqlalchemy import and_
 from sqlalchemy.orm import selectinload
@@ -333,7 +333,7 @@ async def test_group_service_correctly_filters_group_requests(
 
 
 @pytest.mark.asyncio
-async def test_group_service_correctly_filters_group_requests(
+async def test_group_service_correctly_excludes_accepted_requests(
     user_in_db: User,
     public_group_in_db: Group,
     group_request_in_db: GroupRequest,
@@ -360,5 +360,41 @@ async def test_group_service_raises_permission_denied_on_get_group_request_list(
         result = await GroupService.filter_get_group_request_list(
             group_id=public_group_in_db.id,
             request_user=other_user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_group_request_by_id(
+    user_in_db: User,
+    other_user_in_db: User,
+    public_group_in_db: Group,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    request: GroupRequest = await GroupService.filter_get_group_request_by_id(
+        group_id=public_group_in_db.id,
+        request_id=group_request_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert request.group_id == group_request_in_db.group_id
+    assert request.user_id == group_request_in_db.user_id
+    assert request.status == group_request_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_group_service__raises_does_not_exist_exception_on_get_invalid_request_id(
+    user_in_db: User,
+    other_user_in_db: User,
+    public_group_in_db: Group,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        request: GroupRequest = await GroupService.filter_get_group_request_by_id(
+            group_id=public_group_in_db.id,
+            request_id=uuid4(),
+            request_user=user_in_db,
             session=session,
         )

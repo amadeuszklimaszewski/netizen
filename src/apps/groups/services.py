@@ -169,6 +169,33 @@ class GroupService:
         ).all()
 
     @classmethod
+    async def filter_get_group_request_by_id(
+        cls,
+        group_id: UUID,
+        request_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ) -> GroupRequest:
+        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
+        membership: GroupMembership = await cls._find_membership(
+            group_id=group.id, user_id=request_user.id, session=session
+        )
+        if membership is None or membership.membership_status == "REGULAR":
+            raise PermissionDeniedException("User unauthorized to access this data.")
+        request = (
+            await session.exec(
+                select(GroupRequest).where(
+                    and_(
+                        GroupRequest.group_id == group_id, GroupRequest.id == request_id
+                    )
+                )
+            )
+        ).first()
+        if request is None:
+            raise DoesNotExistException("Request with given ID does not exist")
+        return request
+
+    @classmethod
     async def create_group_request(
         cls, group_id: UUID, request_user: User, session: AsyncSession
     ) -> GroupRequest:

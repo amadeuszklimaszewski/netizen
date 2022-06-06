@@ -55,11 +55,10 @@ async def get_group_by_id(
     request_user: Union[User, None] = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ) -> GroupOutputSchema:
-    return GroupOutputSchema.from_orm(
-        await group_service.filter_get_group_by_id(
-            group_id=group_id, request_user=request_user, session=session
-        )
+    group = await group_service.filter_get_group_by_id(
+        group_id=group_id, request_user=request_user, session=session
     )
+    return GroupOutputSchema.from_orm(group)
 
 
 @group_router.post(
@@ -184,7 +183,13 @@ async def get_group_request_by_id(
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    request = await group_service.filter_get_group_request_by_id(
+        group_id=group_id,
+        request_id=request_id,
+        request_user=request_user,
+        session=session,
+    )
+    return GroupRequestOutputSchema.from_orm(request)
 
 
 @group_router.put(
