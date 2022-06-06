@@ -437,11 +437,23 @@ async def test_group_service_correctly_filters_get_group_members_list_with_other
     public_group_in_db: Group,
     session: AsyncSession,
 ):
-    members = await GroupService.filter_get_group_members_list(
+    public_members = await GroupService.filter_get_group_members_list(
         group_id=public_group_in_db.id, request_user=other_user_in_db, session=session
     )
-    assert len(members) == 1
-    assert members[0].user_id == user_in_db.id
+    assert len(public_members) == 1
+    assert public_members[0].user_id == user_in_db.id
+
+    private_members = await GroupService.filter_get_group_members_list(
+        group_id=public_group_in_db.id, request_user=other_user_in_db, session=session
+    )
+    assert len(private_members) == 1
+    assert private_members[0].user_id == user_in_db.id
+
+    closed_members = await GroupService.filter_get_group_members_list(
+        group_id=public_group_in_db.id, request_user=other_user_in_db, session=session
+    )
+    assert len(closed_members) == 1
+    assert closed_members[0].user_id == user_in_db.id
 
 
 @pytest.mark.asyncio
@@ -459,8 +471,7 @@ async def test_group_service_correctly_filters_get_closed_group_members_list(
 
 
 @pytest.mark.asyncio
-async def test_group_service_correctly_filters_get_closed_group_members_raises_permission_denied_exception(
-    user_in_db: User,
+async def test_group_service_filters_get_closed_group_members_raises_permission_denied_exception(
     other_user_in_db: User,
     closed_group_in_db: Group,
     session: AsyncSession,
