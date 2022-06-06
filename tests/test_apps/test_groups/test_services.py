@@ -11,41 +11,11 @@ from src.apps.groups.models import (
     GroupMembership,
     GroupOutputSchema,
     GroupRequest,
+    GroupRequestUpdateSchema,
 )
 from src.apps.groups.services import GroupService
 from src.apps.users.models import User
 from src.core.exceptions import DoesNotExistException, PermissionDeniedException
-
-
-@pytest.mark.asyncio
-async def test_check_user_permissions(
-    public_group_in_db: Group,
-    user_in_db: User,
-    other_user_in_db: User,
-    session: AsyncSession,
-):
-    try:
-        await GroupService._check_user_permissions(
-            group_id=public_group_in_db.id, user=user_in_db, session=session
-        )
-    except PermissionDeniedException as exc:
-        assert False, f"Exception raised: {exc}"
-
-    with pytest.raises(PermissionDeniedException):
-        await GroupService._check_user_permissions(
-            group_id=public_group_in_db.id, user=other_user_in_db, session=session
-        )
-
-    await session.exec(
-        update(GroupMembership)
-        .where(GroupMembership.user_id == user_in_db.id)
-        .values({"membership_status": "REGULAR"})
-    )
-    await session.refresh(user_in_db)
-    with pytest.raises(PermissionDeniedException):
-        await GroupService._check_user_permissions(
-            group_id=public_group_in_db.id, user=other_user_in_db, session=session
-        )
 
 
 @pytest.mark.asyncio
@@ -191,7 +161,7 @@ async def test_group_service_correctly_filters_groups_with_user_in_closed_group(
     session: AsyncSession,
 ):
     await GroupService.create_membership(
-        group=closed_group_in_db,
+        group_id=closed_group_in_db.id,
         user=other_user_in_db,
         membership_status="REGULAR",
         session=session,
@@ -288,7 +258,7 @@ async def test_group_service_correctly_removes_user_from_group(
     public_group_in_db: Group,
     session: AsyncSession,
 ):
-    await GroupService.remove_user_from_group(
+    await GroupService.delete_membership(
         group_id=public_group_in_db.id, user=user_in_db, session=session
     )
     membership = (
@@ -311,7 +281,7 @@ async def test_group_service_raises_exception_on_remove_when_user_is_not_a_membe
     session: AsyncSession,
 ):
     with pytest.raises(DoesNotExistException):
-        await GroupService.remove_user_from_group(
+        await GroupService.delete_membership(
             group_id=public_group_in_db.id, user=other_user_in_db, session=session
         )
 
@@ -384,7 +354,7 @@ async def test_group_service_correctly_filters_group_request_by_id(
 
 
 @pytest.mark.asyncio
-async def test_group_service__raises_does_not_exist_exception_on_get_invalid_request_id(
+async def test_group_service_raises_does_not_exist_exception_on_get_invalid_request_id(
     user_in_db: User,
     other_user_in_db: User,
     public_group_in_db: Group,
@@ -398,3 +368,50 @@ async def test_group_service__raises_does_not_exist_exception_on_get_invalid_req
             request_user=user_in_db,
             session=session,
         )
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_updates_group_request(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    schema = GroupRequestUpdateSchema(**{"status": "ACCEPTED"})
+    request = await GroupService.update_group_request(
+        schema=schema,
+        group_id=public_group_in_db.id,
+        request_id=group_request_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert request.status == schema.status
+    assert request.group_id == group_request_in_db.group_id
+    assert request.user_id == group_request_in_db.user_id
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_creates_membership_on_accepting_group_request(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    schema = GroupRequestUpdateSchema(**{"status": "ACCEPTED"})
+    request = await GroupService.update_group_request(
+        schema=schema,
+        group_id=public_group_in_db.id,
+        request_id=group_request_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    membership = (
+        await session.exec(
+            select(GroupMembership).where(
+                GroupMembership.user_id == group_request_in_db.user_id
+            )
+        )
+    ).first()
+    assert membership != None
+    assert membership.group_id == group_request_in_db.group_id
+    assert membership.membership_status == "REGULAR"

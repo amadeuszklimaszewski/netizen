@@ -359,3 +359,24 @@ async def test_anonymous_user_cannot_get_group_request_by_id(
 
     response_body = response.json()
     assert len(response_body) == 1
+
+
+@pytest.mark.asyncio
+async def test_admin_user_can_update_request(
+    client: AsyncClient,
+    user_bearer_token_header: dict[str, str],
+    public_group_in_db: Group,
+    group_request_in_db: GroupRequest,
+):
+    update_data = {"status": "ACCEPTED"}
+    response: Response = await client.put(
+        f"/groups/{public_group_in_db.id}/requests/{group_request_in_db.id}/",
+        json=update_data,
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+
+    assert response_body["status"] == "ACCEPTED"
+    assert response_body["user_id"] == str(group_request_in_db.user_id)
+    assert response_body["group_id"] == str(group_request_in_db.group_id)

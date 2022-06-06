@@ -14,22 +14,30 @@ from src.apps.groups.models import (
     GroupInputSchema,
     GroupMembership,
     GroupRequest,
+    GroupRequestUpdateSchema,
+)
+from src.apps.groups.permissions import (
+    validate_user_is_admin,
+    validate_user_is_moderator_or_admin,
 )
 from src.apps.users.models import User
 from src.core.utils import get_object_by_id
 
 
 class GroupService:
+
+    # --- --- Group members --- ---
+
     @classmethod
     async def create_membership(
         cls,
-        group: Group,
+        group_id: UUID,
         user: User,
         membership_status: GroupMemberStatus,
         session: AsyncSession,
     ) -> GroupMembership:
         membership = GroupMembership(
-            group_id=group.id,
+            group_id=group_id,
             user_id=user.id,
             membership_status=membership_status,
         )
@@ -39,28 +47,28 @@ class GroupService:
         return membership
 
     @classmethod
-    async def create_group(
-        cls, schema: GroupInputSchema, user: User, session: AsyncSession
-    ) -> Group:
-        group_data = schema.dict()
-        group = Group(**group_data)
-        session.add(group)
-        await session.commit()
+    async def delete_membership(
+        cls,
+        group_id: UUID,
+        user: User,
+        session: AsyncSession,
+    ):
+        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
 
-        admin = await cls.create_membership(
-            group=group,
-            user=user,
-            membership_status=GroupMemberStatus.ADMIN,
-            session=session,
+        membership: GroupMembership = await cls._find_membership(
+            group_id=group.id, user_id=user.id, session=session
         )
-
-        await session.refresh(group)
-        return group
+        if membership is None:
+            raise DoesNotExistException("User is not a member of this group")
+        await session.delete(membership)
+        await session.commit()
+        return
 
     @classmethod
     async def _find_membership(
         cls, group_id: UUID, user_id: UUID, session: AsyncSession
     ) -> Union[GroupMembership, None]:
+        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
         membership: Union[GroupMembership, None] = (
             await session.exec(
                 select(GroupMembership).where(
@@ -73,22 +81,35 @@ class GroupService:
         ).first()
         return membership
 
+    # --- --- Groups --- ---
+
     @classmethod
-    async def _check_user_permissions(
-        cls, group_id: UUID, user: User, session: AsyncSession
-    ):
-        membership = await cls._find_membership(
-            group_id=group_id, user_id=user.id, session=session
+    async def create_group(
+        cls, schema: GroupInputSchema, user: User, session: AsyncSession
+    ) -> Group:
+        group_data = schema.dict()
+        group = Group(**group_data)
+        session.add(group)
+        await session.commit()
+
+        admin = await cls.create_membership(
+            group_id=group.id,
+            user=user,
+            membership_status=GroupMemberStatus.ADMIN,
+            session=session,
         )
-        if not membership or membership.membership_status != "ADMIN":
-            raise PermissionDeniedException
+
+        await session.refresh(group)
+        return group
 
     @classmethod
     async def update_group(
         cls, schema: GroupInputSchema, group_id: UUID, user: User, session: AsyncSession
     ) -> Group:
-        await get_object_by_id(Table=Group, id=group_id, session=session)
-        await cls._check_user_permissions(group_id=group_id, user=user, session=session)
+        membership = await cls._find_membership(
+            group_id=group_id, user_id=user.id, session=session
+        )
+        await validate_user_is_admin(membership=membership)
 
         update_data = schema.dict()
         await session.exec(
@@ -98,8 +119,11 @@ class GroupService:
 
     @classmethod
     async def delete_group(cls, group_id: UUID, user: User, session: AsyncSession):
-        await get_object_by_id(Table=Group, id=group_id, session=session)
-        await cls._check_user_permissions(group_id=group_id, user=user, session=session)
+        membership = await cls._find_membership(
+            group_id=group_id, user_id=user.id, session=session
+        )
+        await validate_user_is_admin(membership=membership)
+
         group = (await session.exec(select(Group).where(Group.id == group_id))).first()
         await session.delete(group)
         await session.commit()
@@ -144,56 +168,7 @@ class GroupService:
                 )
         return group
 
-    @classmethod
-    async def filter_get_group_request_list(
-        cls,
-        group_id: UUID,
-        request_user: User,
-        session: AsyncSession,
-    ) -> list[GroupRequest]:
-        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
-        membership: GroupMembership = await cls._find_membership(
-            group_id=group.id, user_id=request_user.id, session=session
-        )
-        if membership is None or membership.membership_status == "REGULAR":
-            raise PermissionDeniedException("User unauthorized to access this data.")
-        return (
-            await session.exec(
-                select(GroupRequest).where(
-                    and_(
-                        GroupRequest.group_id == group.id,
-                        GroupRequest.status == "PENDING",
-                    )
-                )
-            )
-        ).all()
-
-    @classmethod
-    async def filter_get_group_request_by_id(
-        cls,
-        group_id: UUID,
-        request_id: UUID,
-        request_user: User,
-        session: AsyncSession,
-    ) -> GroupRequest:
-        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
-        membership: GroupMembership = await cls._find_membership(
-            group_id=group.id, user_id=request_user.id, session=session
-        )
-        if membership is None or membership.membership_status == "REGULAR":
-            raise PermissionDeniedException("User unauthorized to access this data.")
-        request = (
-            await session.exec(
-                select(GroupRequest).where(
-                    and_(
-                        GroupRequest.group_id == group_id, GroupRequest.id == request_id
-                    )
-                )
-            )
-        ).first()
-        if request is None:
-            raise DoesNotExistException("Request with given ID does not exist")
-        return request
+    # --- ---- Group requests --- ---
 
     @classmethod
     async def create_group_request(
@@ -213,16 +188,85 @@ class GroupService:
         return request
 
     @classmethod
-    async def remove_user_from_group(
-        cls, group_id: UUID, user: User, session: AsyncSession
+    async def update_group_request(
+        cls,
+        schema: GroupRequestUpdateSchema,
+        group_id: UUID,
+        request_id: UUID,
+        request_user: User,
+        session: AsyncSession,
     ):
-        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
-
-        membership: GroupMembership = await cls._find_membership(
-            group_id=group.id, user_id=user.id, session=session
+        membership = await cls._find_membership(
+            group_id=group_id, user_id=request_user.id, session=session
         )
-        if membership is None:
-            raise DoesNotExistException("User is not a member of this group")
-        await session.delete(membership)
-        await session.commit()
-        return
+        await validate_user_is_moderator_or_admin(membership=membership)
+        request = await get_object_by_id(
+            Table=GroupRequest, id=request_id, session=session
+        )
+
+        update_data = schema.dict()
+        if update_data["status"] == "ACCEPTED":
+            await cls.create_membership(
+                group_id=group_id,
+                user=request.user,
+                membership_status="REGULAR",
+                session=session,
+            )
+        await session.exec(
+            update(GroupRequest)
+            .where(GroupRequest.id == request_id)
+            .values(**update_data)
+        )
+
+        return (
+            await session.exec(
+                select(GroupRequest).where(GroupRequest.id == request_id)
+            )
+        ).first()
+
+    @classmethod
+    async def filter_get_group_request_list(
+        cls,
+        group_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ) -> list[GroupRequest]:
+        membership = await cls._find_membership(
+            group_id=group_id, user_id=request_user.id, session=session
+        )
+        await validate_user_is_moderator_or_admin(membership=membership)
+        return (
+            await session.exec(
+                select(GroupRequest).where(
+                    and_(
+                        GroupRequest.group_id == group_id,
+                        GroupRequest.status == "PENDING",
+                    )
+                )
+            )
+        ).all()
+
+    @classmethod
+    async def filter_get_group_request_by_id(
+        cls,
+        group_id: UUID,
+        request_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ) -> GroupRequest:
+        membership = await cls._find_membership(
+            group_id=group_id, user_id=request_user.id, session=session
+        )
+        await validate_user_is_moderator_or_admin(membership=membership)
+        request = (
+            await session.exec(
+                select(GroupRequest).where(
+                    and_(
+                        GroupRequest.group_id == group_id, GroupRequest.id == request_id
+                    )
+                )
+            )
+        ).first()
+        if request is None:
+            raise DoesNotExistException("Request with given ID does not exist")
+        return request

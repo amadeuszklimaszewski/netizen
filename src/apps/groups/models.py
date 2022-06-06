@@ -37,6 +37,10 @@ class GroupRequestOutputSchema(SQLModel):
     status: GroupRequestStatus
 
 
+class GroupRequestUpdateSchema(SQLModel):
+    status: GroupRequestStatus
+
+
 class GroupMembership(TimeStampedUUIDModelBase, table=True):
     group_id: UUID = Field(foreign_key="group.id", primary_key=True)
     user_id: UUID = Field(foreign_key="user.id", primary_key=True)

@@ -5,6 +5,7 @@ from fastapi_another_jwt_auth import AuthJWT
 from src.apps.groups.models import (
     Group,
     GroupInputSchema,
+    GroupMembership,
     GroupOutputSchema,
     GroupRequest,
 )
@@ -147,3 +148,18 @@ async def group_request_in_db(
     await session.commit()
     await session.refresh(request)
     return request
+
+
+@pytest_asyncio.fixture
+async def group_membership_in_db(
+    other_user_in_db: User,
+    public_group_in_db: Group,
+    session: AsyncSession,
+) -> GroupMembership:
+    membership = GroupMembership(
+        group=public_group_in_db, user=other_user_in_db, membership_status="REGULAR"
+    )
+    session.add(membership)
+    await session.commit()
+    await session.refresh(membership)
+    return membership

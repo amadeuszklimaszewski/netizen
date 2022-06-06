@@ -15,6 +15,7 @@ from src.apps.groups.models import (
     GroupInputSchema,
     Group,
     GroupRequestOutputSchema,
+    GroupRequestUpdateSchema,
 )
 from src.apps.groups.services import GroupService
 
@@ -142,7 +143,7 @@ async def leave_group(
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ):
-    await group_service.remove_user_from_group(
+    await group_service.delete_membership(
         group_id=group_id, user=request_user, session=session
     )
     return {}
@@ -199,13 +200,21 @@ async def get_group_request_by_id(
     response_model=GroupRequestOutputSchema,
 )
 async def update_group_request(
+    update_schema: GroupRequestUpdateSchema,
     group_id: UUID,
     request_id: UUID,
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    request = await group_service.update_group_request(
+        schema=update_schema,
+        group_id=group_id,
+        request_id=request_id,
+        request_user=request_user,
+        session=session,
+    )
+    return GroupRequestOutputSchema.from_orm(request)
 
 
 @group_router.get(
