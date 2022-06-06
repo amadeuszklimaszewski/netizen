@@ -145,12 +145,36 @@ class GroupService:
         return group
 
     @classmethod
+    async def filter_get_group_request_list(
+        cls,
+        group_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ) -> list[GroupRequest]:
+        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
+        membership: GroupMembership = await cls._find_membership(
+            group_id=group.id, user_id=request_user.id, session=session
+        )
+        if membership is None or membership.membership_status == "REGULAR":
+            raise PermissionDeniedException("User unauthorized to access this data.")
+        return (
+            await session.exec(
+                select(GroupRequest).where(
+                    and_(
+                        GroupRequest.group_id == group.id,
+                        GroupRequest.status == "PENDING",
+                    )
+                )
+            )
+        ).all()
+
+    @classmethod
     async def create_group_request(
         cls, group_id: UUID, request_user: User, session: AsyncSession
     ) -> GroupRequest:
         group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
 
-        if not await cls._find_membership(
+        if await cls._find_membership(
             group_id=group.id, user_id=request_user.id, session=session
         ):
             raise AlreadyExistsException("User is already a member of this group")

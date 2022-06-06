@@ -2,7 +2,12 @@ import pytest
 import pytest_asyncio
 from sqlmodel.ext.asyncio.session import AsyncSession
 from fastapi_another_jwt_auth import AuthJWT
-from src.apps.groups.models import GroupInputSchema, GroupOutputSchema
+from src.apps.groups.models import (
+    Group,
+    GroupInputSchema,
+    GroupOutputSchema,
+    GroupRequest,
+)
 from src.apps.groups.services import GroupService
 
 from src.apps.users.services import UserService
@@ -127,3 +132,18 @@ def group_update_data() -> dict[str, str]:
         "description": "description",
         "status": "PRIVATE",
     }
+
+
+@pytest_asyncio.fixture
+async def group_request_in_db(
+    other_user_in_db: User,
+    public_group_in_db: Group,
+    session: AsyncSession,
+) -> GroupRequest:
+    request = GroupRequest(
+        group=public_group_in_db, user=other_user_in_db, status="PENDING"
+    )
+    session.add(request)
+    await session.commit()
+    await session.refresh(request)
+    return request

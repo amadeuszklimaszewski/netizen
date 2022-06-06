@@ -6,7 +6,6 @@ from fastapi.routing import APIRouter
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database.connection import get_db
-from src.core.utils import get_object_by_id
 from src.apps.users.models import User
 from src.dependencies.users import authenticate_user, get_user_or_none
 from src.apps.groups.models import (
@@ -21,8 +20,6 @@ from src.apps.groups.services import GroupService
 
 
 group_router = APIRouter(prefix="/groups")
-
-# dependencies=[Depends(authenticate_user)]
 
 
 @group_router.get(
@@ -164,7 +161,14 @@ async def get_group_requests(
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    return [
+        GroupRequestOutputSchema.from_orm(group_request)
+        for group_request in (
+            await group_service.filter_get_group_request_list(
+                group_id=group_id, request_user=request_user, session=session
+            )
+        )
+    ]
 
 
 @group_router.get(

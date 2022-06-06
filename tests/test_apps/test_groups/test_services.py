@@ -10,6 +10,7 @@ from src.apps.groups.models import (
     GroupInputSchema,
     GroupMembership,
     GroupOutputSchema,
+    GroupRequest,
 )
 from src.apps.groups.services import GroupService
 from src.apps.users.models import User
@@ -269,14 +270,14 @@ async def test_group_service_raises_permission_denied_exception_with_closed_grou
 
 @pytest.mark.asyncio
 async def test_group_service_correctly_creates_group_request(
-    user_in_db: User,
+    other_user_in_db: User,
     public_group_in_db: Group,
     session: AsyncSession,
 ):
     request = await GroupService.create_group_request(
-        group_id=public_group_in_db.id, request_user=user_in_db, session=session
+        group_id=public_group_in_db.id, request_user=other_user_in_db, session=session
     )
-    assert request.user == user_in_db
+    assert request.user == other_user_in_db
     assert request.group == public_group_in_db
     assert request.status == "PENDING"
 
@@ -304,7 +305,7 @@ async def test_group_service_correctly_removes_user_from_group(
 
 
 @pytest.mark.asyncio
-async def test_group_service_correctly_removes_user_from_group(
+async def test_group_service_raises_exception_on_remove_when_user_is_not_a_member(
     other_user_in_db: User,
     public_group_in_db: Group,
     session: AsyncSession,
@@ -312,4 +313,52 @@ async def test_group_service_correctly_removes_user_from_group(
     with pytest.raises(DoesNotExistException):
         await GroupService.remove_user_from_group(
             group_id=public_group_in_db.id, user=other_user_in_db, session=session
+        )
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_group_requests(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    result = await GroupService.filter_get_group_request_list(
+        group_id=public_group_in_db.id, request_user=user_in_db, session=session
+    )
+    assert len(result) == 1
+    assert result[0].id == group_request_in_db.id
+    assert result[0].user_id == group_request_in_db.user_id
+    assert result[0].group_id == group_request_in_db.group_id
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_group_requests(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    group_request_in_db.status = "ACCEPTED"
+    session.add(group_request_in_db)
+    await session.commit()
+
+    result = await GroupService.filter_get_group_request_list(
+        group_id=public_group_in_db.id, request_user=user_in_db, session=session
+    )
+    assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_group_service_raises_permission_denied_on_get_group_request_list(
+    other_user_in_db: User,
+    public_group_in_db: Group,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(PermissionDeniedException):
+        result = await GroupService.filter_get_group_request_list(
+            group_id=public_group_in_db.id,
+            request_user=other_user_in_db,
+            session=session,
         )
