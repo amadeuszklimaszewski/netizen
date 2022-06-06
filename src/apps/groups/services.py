@@ -91,6 +91,22 @@ class GroupService:
             raise PermissionDeniedException("User is not a member of this group")
         return membership
 
+    @classmethod
+    async def filter_get_group_members_list(
+        cls,
+        group_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ) -> list[GroupMembership | None]:
+        group = await cls.filter_get_group_by_id(
+            group_id=group_id, request_user=request_user, session=session
+        )
+        return (
+            await session.exec(
+                select(GroupMembership).where(GroupMembership.group_id == group.id)
+            )
+        ).all()
+
     # --- --- Groups --- ---
 
     @classmethod
@@ -173,10 +189,6 @@ class GroupService:
             membership = await cls._find_membership_or_raise_exception(
                 group_id=group_id, user_id=request_user.id, session=session
             )
-            # if membership is None:
-            #     raise PermissionDeniedException(
-            #         "Invalid request. User is not a member of this group"
-            #     )
         return group
 
     # --- ---- Group requests --- ---

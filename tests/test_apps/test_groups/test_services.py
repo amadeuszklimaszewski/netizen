@@ -415,3 +415,59 @@ async def test_group_service_correctly_creates_membership_on_accepting_group_req
     assert membership != None
     assert membership.group_id == group_request_in_db.group_id
     assert membership.membership_status == "REGULAR"
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_get_group_members_list(
+    user_in_db: User,
+    public_group_in_db: Group,
+    session: AsyncSession,
+):
+    members = await GroupService.filter_get_group_members_list(
+        group_id=public_group_in_db.id, request_user=user_in_db, session=session
+    )
+    assert len(members) == 1
+    assert members[0].user_id == user_in_db.id
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_get_group_members_list_with_other_user(
+    user_in_db: User,
+    other_user_in_db: User,
+    public_group_in_db: Group,
+    session: AsyncSession,
+):
+    members = await GroupService.filter_get_group_members_list(
+        group_id=public_group_in_db.id, request_user=other_user_in_db, session=session
+    )
+    assert len(members) == 1
+    assert members[0].user_id == user_in_db.id
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_get_closed_group_members_list(
+    user_in_db: User,
+    other_user_in_db: User,
+    closed_group_in_db: Group,
+    session: AsyncSession,
+):
+    members = await GroupService.filter_get_group_members_list(
+        group_id=closed_group_in_db.id, request_user=user_in_db, session=session
+    )
+    assert len(members) == 1
+    assert members[0].user_id == user_in_db.id
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_get_closed_group_members_raises_permission_denied_exception(
+    user_in_db: User,
+    other_user_in_db: User,
+    closed_group_in_db: Group,
+    session: AsyncSession,
+):
+    with pytest.raises(PermissionDeniedException):
+        members = await GroupService.filter_get_group_members_list(
+            group_id=closed_group_in_db.id,
+            request_user=other_user_in_db,
+            session=session,
+        )

@@ -381,3 +381,43 @@ async def test_admin_user_can_update_request(
     assert response_body["status"] == "ACCEPTED"
     assert response_body["user_id"] == str(group_request_in_db.user_id)
     assert response_body["group_id"] == str(group_request_in_db.group_id)
+
+
+@pytest.mark.asyncio
+async def test_user_can_get_group_members_list(
+    client: AsyncSession,
+    user_in_db: User,
+    user_bearer_token_header: dict[str, str],
+    group_membership_in_db: GroupMembership,
+    public_group_in_db: Group,
+):
+    response: Response = await client.get(
+        f"/groups/{public_group_in_db.id}/members/", headers=user_bearer_token_header
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+    assert len(response_body) == 2
+
+    assert response_body[0]["group_id"] == str(public_group_in_db.id)
+    assert response_body[0]["user_id"] == str(user_in_db.id)
+    assert response_body[0]["membership_status"] == "ADMIN"
+
+    assert response_body[1]["group_id"] == str(group_membership_in_db.group_id)
+    assert response_body[1]["user_id"] == str(group_membership_in_db.user_id)
+    assert (
+        response_body[1]["membership_status"]
+        == group_membership_in_db.membership_status
+    )
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_get_closed_group_members_list(
+    client: AsyncSession,
+    group_membership_in_db: GroupMembership,
+    closed_group_in_db: Group,
+):
+    response: Response = await client.get(f"/groups/{closed_group_in_db.id}/members/")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1
