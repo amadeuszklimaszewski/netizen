@@ -280,7 +280,7 @@ async def test_group_service_raises_exception_on_remove_when_user_is_not_a_membe
     public_group_in_db: Group,
     session: AsyncSession,
 ):
-    with pytest.raises(DoesNotExistException):
+    with pytest.raises(PermissionDeniedException):
         await GroupService.delete_membership(
             group_id=public_group_in_db.id, user=other_user_in_db, session=session
         )

@@ -131,6 +131,7 @@ async def test_regular_user_cannot_update_group(
     public_group_in_db: Group,
     group_update_data: dict[str, str],
 ):
+
     response: Response = await client.put(
         f"/groups/{public_group_in_db.id}/",
         json=group_update_data,

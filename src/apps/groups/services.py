@@ -55,11 +55,10 @@ class GroupService:
     ):
         group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
 
-        membership: GroupMembership = await cls._find_membership(
+        membership = await cls._find_membership_or_raise_exception(
             group_id=group.id, user_id=user.id, session=session
         )
-        if membership is None:
-            raise DoesNotExistException("User is not a member of this group")
+
         await session.delete(membership)
         await session.commit()
         return
@@ -79,6 +78,17 @@ class GroupService:
                 )
             )
         ).first()
+        return membership
+
+    @classmethod
+    async def _find_membership_or_raise_exception(
+        cls, group_id: UUID, user_id: UUID, session: AsyncSession
+    ) -> GroupMembership:
+        membership = await cls._find_membership(
+            group_id=group_id, user_id=user_id, session=session
+        )
+        if membership is None:
+            raise PermissionDeniedException("User is not a member of this group")
         return membership
 
     # --- --- Groups --- ---
@@ -106,7 +116,7 @@ class GroupService:
     async def update_group(
         cls, schema: GroupInputSchema, group_id: UUID, user: User, session: AsyncSession
     ) -> Group:
-        membership = await cls._find_membership(
+        membership = await cls._find_membership_or_raise_exception(
             group_id=group_id, user_id=user.id, session=session
         )
         await validate_user_is_admin(membership=membership)
@@ -115,11 +125,12 @@ class GroupService:
         await session.exec(
             update(Group).where(Group.id == group_id).values(**update_data)
         )
-        return (await session.exec(select(Group).where(Group.id == group_id))).first()
+        group = await get_object_by_id(Table=Group, id=group_id, session=session)
+        return group
 
     @classmethod
     async def delete_group(cls, group_id: UUID, user: User, session: AsyncSession):
-        membership = await cls._find_membership(
+        membership = await cls._find_membership_or_raise_exception(
             group_id=group_id, user_id=user.id, session=session
         )
         await validate_user_is_admin(membership=membership)
@@ -159,13 +170,13 @@ class GroupService:
         if not request_user and group.status == "CLOSED":
             raise PermissionDeniedException
         if request_user and group.status == "CLOSED":
-            membership = await cls._find_membership(
+            membership = await cls._find_membership_or_raise_exception(
                 group_id=group_id, user_id=request_user.id, session=session
             )
-            if membership is None:
-                raise PermissionDeniedException(
-                    "Invalid request. User is not a member of this group"
-                )
+            # if membership is None:
+            #     raise PermissionDeniedException(
+            #         "Invalid request. User is not a member of this group"
+            #     )
         return group
 
     # --- ---- Group requests --- ---
@@ -196,12 +207,12 @@ class GroupService:
         request_user: User,
         session: AsyncSession,
     ):
-        membership = await cls._find_membership(
+        membership = await cls._find_membership_or_raise_exception(
             group_id=group_id, user_id=request_user.id, session=session
         )
         await validate_user_is_moderator_or_admin(membership=membership)
-        request = await get_object_by_id(
-            Table=GroupRequest, id=request_id, session=session
+        request = await cls._find_group_request(
+            group_id=group_id, request_id=request_id, session=session
         )
 
         update_data = schema.dict()
@@ -225,13 +236,32 @@ class GroupService:
         ).first()
 
     @classmethod
+    async def _find_group_request(
+        cls, group_id: UUID, request_id: UUID, session: AsyncSession
+    ) -> GroupRequest:
+        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
+        request: Union[GroupRequest, None] = (
+            await session.exec(
+                select(GroupRequest).where(
+                    and_(
+                        GroupRequest.id == request_id,
+                        GroupRequest.group_id == group_id,
+                    )
+                )
+            )
+        ).first()
+        if request is None:
+            raise DoesNotExistException("Group request with given ID does not exist")
+        return request
+
+    @classmethod
     async def filter_get_group_request_list(
         cls,
         group_id: UUID,
         request_user: User,
         session: AsyncSession,
     ) -> list[GroupRequest]:
-        membership = await cls._find_membership(
+        membership = await cls._find_membership_or_raise_exception(
             group_id=group_id, user_id=request_user.id, session=session
         )
         await validate_user_is_moderator_or_admin(membership=membership)
@@ -254,19 +284,11 @@ class GroupService:
         request_user: User,
         session: AsyncSession,
     ) -> GroupRequest:
-        membership = await cls._find_membership(
+        membership = await cls._find_membership_or_raise_exception(
             group_id=group_id, user_id=request_user.id, session=session
         )
         await validate_user_is_moderator_or_admin(membership=membership)
-        request = (
-            await session.exec(
-                select(GroupRequest).where(
-                    and_(
-                        GroupRequest.group_id == group_id, GroupRequest.id == request_id
-                    )
-                )
-            )
-        ).first()
-        if request is None:
-            raise DoesNotExistException("Request with given ID does not exist")
+        request = await cls._find_group_request(
+            group_id=group_id, request_id=request_id, session=session
+        )
         return request
