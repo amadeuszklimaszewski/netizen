@@ -464,6 +464,7 @@ async def test_group_service_correctly_filters_get_group_members_list_with_other
     user_in_db: User,
     other_user_in_db: User,
     public_group_in_db: Group,
+    private_group_in_db: Group,
     session: AsyncSession,
 ):
     public_members = await GroupService.filter_get_group_members_list(
@@ -473,16 +474,10 @@ async def test_group_service_correctly_filters_get_group_members_list_with_other
     assert public_members[0].user_id == user_in_db.id
 
     private_members = await GroupService.filter_get_group_members_list(
-        group_id=public_group_in_db.id, request_user=other_user_in_db, session=session
+        group_id=private_group_in_db.id, request_user=other_user_in_db, session=session
     )
     assert len(private_members) == 1
     assert private_members[0].user_id == user_in_db.id
-
-    closed_members = await GroupService.filter_get_group_members_list(
-        group_id=public_group_in_db.id, request_user=other_user_in_db, session=session
-    )
-    assert len(closed_members) == 1
-    assert closed_members[0].user_id == user_in_db.id
 
 
 @pytest.mark.asyncio
