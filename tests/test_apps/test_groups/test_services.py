@@ -10,7 +10,6 @@ from src.apps.groups.models import (
     GroupInputSchema,
     GroupMembership,
     GroupMembershipUpdateSchema,
-    GroupOutputSchema,
     GroupRequest,
     GroupRequestUpdateSchema,
 )
@@ -263,7 +262,7 @@ async def test_group_service_correctly_removes_user_from_group(
     public_group_in_db: Group,
     session: AsyncSession,
 ):
-    await GroupService.delete_membership(
+    await GroupService.delete_membership_by_user_id(
         group_id=public_group_in_db.id, user=user_in_db, session=session
     )
     membership = (
@@ -286,7 +285,7 @@ async def test_group_service_raises_exception_on_remove_when_user_is_not_a_membe
     session: AsyncSession,
 ):
     with pytest.raises(PermissionDeniedException):
-        await GroupService.delete_membership(
+        await GroupService.delete_membership_by_user_id(
             group_id=public_group_in_db.id, user=other_user_in_db, session=session
         )
 
@@ -574,6 +573,53 @@ async def test_group_service_raises_exceptions_on_invalid_update_group_membershi
     with pytest.raises(DoesNotExistException):
         membership = await GroupService.update_membership(
             schema=schema,
+            group_id=public_group_in_db.id,
+            membership_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_deletes_group_membership_by_id(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_membership_in_db: GroupMembership,
+    session: AsyncSession,
+):
+    await GroupService.delete_membership_by_id(
+        group_id=public_group_in_db.id,
+        membership_id=group_membership_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    result = (
+        await session.exec(
+            select(GroupMembership).where(
+                GroupMembership.id == group_membership_in_db.id
+            )
+        )
+    ).first()
+    assert result == None
+
+
+@pytest.mark.asyncio
+async def test_group_service_raises_exceptinos_on_invalid_delete_group_membership_by_id(
+    user_in_db: User,
+    other_user_in_db: User,
+    public_group_in_db: Group,
+    group_membership_in_db: GroupMembership,
+    session: AsyncSession,
+):
+    with pytest.raises(PermissionDeniedException):
+        await GroupService.delete_membership_by_id(
+            group_id=public_group_in_db.id,
+            membership_id=group_membership_in_db.id,
+            request_user=other_user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        await GroupService.delete_membership_by_id(
             group_id=public_group_in_db.id,
             membership_id=uuid4(),
             request_user=user_in_db,

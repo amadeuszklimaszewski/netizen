@@ -76,16 +76,33 @@ class GroupService:
         return membership
 
     @classmethod
-    async def delete_membership(
+    async def delete_membership_by_id(
+        cls,
+        group_id: UUID,
+        membership_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ):
+        request_user_membership = await cls._find_membership_or_raise_exception(
+            group_id=group_id, user_id=request_user.id, session=session
+        )
+        await validate_user_is_moderator_or_admin(membership=request_user_membership)
+        membership = await get_object_by_id(
+            Table=GroupMembership, id=membership_id, session=session
+        )
+        await session.delete(membership)
+        await session.commit()
+        return
+
+    @classmethod
+    async def delete_membership_by_user_id(
         cls,
         group_id: UUID,
         user: User,
         session: AsyncSession,
     ):
-        group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
-
         membership = await cls._find_membership_or_raise_exception(
-            group_id=group.id, user_id=user.id, session=session
+            group_id=group_id, user_id=user.id, session=session
         )
 
         await session.delete(membership)

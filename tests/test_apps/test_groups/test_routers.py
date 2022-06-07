@@ -510,3 +510,42 @@ async def test_anonymous_or_regular_user_cannot_update_group_member(
 
     response_body = response.json()
     assert len(response_body) == 1
+
+
+@pytest.mark.asyncio
+async def test_admin_user_can_update_membership(
+    client: AsyncClient,
+    user_bearer_token_header: dict[str, str],
+    public_group_in_db: Group,
+    group_membership_in_db: GroupMembership,
+):
+    response: Response = await client.delete(
+        f"/groups/{public_group_in_db.id}/members/{group_membership_in_db.id}/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+@pytest.mark.asyncio
+async def test_anonymous_or_regular_user_cannot_delete_group_member(
+    client: AsyncClient,
+    other_user_bearer_token_header: dict[str, str],
+    public_group_in_db: Group,
+    group_membership_in_db: GroupMembership,
+):
+    response: Response = await client.delete(
+        f"/groups/{public_group_in_db.id}/members/{group_membership_in_db.id}/",
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1
+
+    response: Response = await client.delete(
+        f"/groups/{public_group_in_db.id}/members/{group_membership_in_db.id}/",
+        headers=other_user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1

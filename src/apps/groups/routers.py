@@ -126,7 +126,7 @@ async def leave_group(
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ):
-    await group_service.delete_membership(
+    await group_service.delete_membership_by_user_id(
         group_id=group_id, user=request_user, session=session
     )
     return {}
@@ -287,8 +287,7 @@ async def update_group_member(
 @group_router.delete(
     "/{group_id}/members/{membership_id}/",
     tags=["groups-members"],
-    status_code=status.HTTP_200_OK,
-    response_model=GroupMembershipOutputSchema,
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_group_member(
     group_id: UUID,
@@ -297,4 +296,10 @@ async def delete_group_member(
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    await group_service.delete_membership_by_id(
+        group_id=group_id,
+        membership_id=membership_id,
+        request_user=request_user,
+        session=session,
+    )
+    return {}
