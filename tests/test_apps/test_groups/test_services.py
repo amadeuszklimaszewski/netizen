@@ -15,7 +15,11 @@ from src.apps.groups.models import (
 )
 from src.apps.groups.services import GroupService
 from src.apps.users.models import User
-from src.core.exceptions import DoesNotExistException, PermissionDeniedException
+from src.core.exceptions import (
+    DoesNotExistException,
+    GroupRequestAlreadyHandled,
+    PermissionDeniedException,
+)
 
 
 @pytest.mark.asyncio
@@ -415,6 +419,31 @@ async def test_group_service_correctly_creates_membership_on_accepting_group_req
     assert membership != None
     assert membership.group_id == group_request_in_db.group_id
     assert membership.membership_status == "REGULAR"
+
+
+@pytest.mark.asyncio
+async def test_group_service_raises_group_request_already_handled_on_duplicated_update_request(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    schema = GroupRequestUpdateSchema(**{"status": "ACCEPTED"})
+    request = await GroupService.update_group_request(
+        schema=schema,
+        group_id=public_group_in_db.id,
+        request_id=group_request_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    with pytest.raises(GroupRequestAlreadyHandled):
+        request = await GroupService.update_group_request(
+            schema=schema,
+            group_id=public_group_in_db.id,
+            request_id=group_request_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
 
 
 @pytest.mark.asyncio

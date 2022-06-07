@@ -14,6 +14,10 @@ class InvalidTableException(APIException):
     pass
 
 
+class GroupRequestAlreadyHandled(APIException):
+    pass
+
+
 class AuthException(APIException):
     pass
 

@@ -7,6 +7,7 @@ from src.core.exceptions import (
     AlreadyExistsException,
     PermissionDeniedException,
     DoesNotExistException,
+    GroupRequestAlreadyHandled,
 )
 from src.apps.groups.enums import GroupMemberStatus
 from src.apps.groups.models import (
@@ -227,6 +228,8 @@ class GroupService:
             group_id=group_id, request_id=request_id, session=session
         )
 
+        if request.status == "ACCEPTED" or request.status == "DENIED":
+            raise GroupRequestAlreadyHandled("Group request already denied or accepted")
         update_data = schema.dict()
         if update_data["status"] == "ACCEPTED":
             await cls.create_membership(
