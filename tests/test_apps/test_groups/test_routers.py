@@ -14,7 +14,7 @@ from src.apps.users.models import User
 
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_groups_list(
-    client: AsyncSession,
+    client: AsyncClient,
     public_group_in_db: Group,
     user_bearer_token_header: dict[str, str],
 ):
@@ -29,7 +29,7 @@ async def test_authenticated_user_can_get_groups_list(
 
 @pytest.mark.asyncio
 async def test_anonymous_user_can_get_groups_list(
-    client: AsyncSession,
+    client: AsyncClient,
     public_group_in_db: Group,
 ):
     response: Response = await client.get("/groups/")
@@ -43,7 +43,7 @@ async def test_anonymous_user_can_get_groups_list(
 
 @pytest.mark.asyncio
 async def test_authenticated_user_can_get_group_by_id(
-    client: AsyncSession,
+    client: AsyncClient,
     public_group_in_db: Group,
     user_bearer_token_header: dict[str, str],
 ):
@@ -60,7 +60,7 @@ async def test_authenticated_user_can_get_group_by_id(
 
 @pytest.mark.asyncio
 async def test_anonymous_user_can_get_group_by_id(
-    client: AsyncSession,
+    client: AsyncClient,
     public_group_in_db: Group,
     user_bearer_token_header: dict[str, str],
 ):
@@ -249,7 +249,7 @@ async def test_anonymous_user_cannot_leave_group(
 
 @pytest.mark.asyncio
 async def test_admin_user_can_get_group_request_list(
-    client: AsyncSession,
+    client: AsyncClient,
     user_bearer_token_header: dict[str, str],
     group_request_in_db: GroupRequest,
     public_group_in_db: Group,
@@ -303,7 +303,7 @@ async def test_anonymous_user_cannot_get_group_request_list(
 
 @pytest.mark.asyncio
 async def test_admin_user_can_get_group_request_by_id(
-    client: AsyncSession,
+    client: AsyncClient,
     user_bearer_token_header: dict[str, str],
     group_request_in_db: GroupRequest,
     public_group_in_db: Group,
@@ -385,7 +385,7 @@ async def test_admin_user_can_update_request(
 
 @pytest.mark.asyncio
 async def test_user_can_get_group_members_list(
-    client: AsyncSession,
+    client: AsyncClient,
     user_in_db: User,
     user_bearer_token_header: dict[str, str],
     group_membership_in_db: GroupMembership,
@@ -412,7 +412,7 @@ async def test_user_can_get_group_members_list(
 
 @pytest.mark.asyncio
 async def test_anonymous_user_cannot_get_closed_group_members_list(
-    client: AsyncSession,
+    client: AsyncClient,
     group_membership_in_db: GroupMembership,
     closed_group_in_db: Group,
 ):
@@ -425,7 +425,7 @@ async def test_anonymous_user_cannot_get_closed_group_members_list(
 
 @pytest.mark.asyncio
 async def test_admin_user_can_get_group_membership_by_id(
-    client: AsyncSession,
+    client: AsyncClient,
     user_bearer_token_header: dict[str, str],
     group_membership_in_db: GroupMembership,
     public_group_in_db: Group,
@@ -446,7 +446,7 @@ async def test_admin_user_can_get_group_membership_by_id(
 
 @pytest.mark.asyncio
 async def test_anonymous_user_can_get_group_membership_by_id(
-    client: AsyncSession,
+    client: AsyncClient,
     group_membership_in_db: GroupMembership,
     public_group_in_db: Group,
 ):
@@ -461,3 +461,52 @@ async def test_anonymous_user_can_get_group_membership_by_id(
     assert (
         response_body["membership_status"] == group_membership_in_db.membership_status
     )
+
+
+@pytest.mark.asyncio
+async def test_admin_user_can_update_membership(
+    client: AsyncClient,
+    user_bearer_token_header: dict[str, str],
+    public_group_in_db: Group,
+    group_membership_in_db: GroupMembership,
+):
+    update_data = {"membership_status": "MODERATOR"}
+    response: Response = await client.put(
+        f"/groups/{public_group_in_db.id}/members/{group_membership_in_db.id}/",
+        json=update_data,
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+
+    assert response_body["membership_status"] == "MODERATOR"
+    assert response_body["user_id"] == str(group_membership_in_db.user_id)
+    assert response_body["group_id"] == str(group_membership_in_db.group_id)
+
+
+@pytest.mark.asyncio
+async def test_anonymous_or_regular_user_cannot_update_group_member(
+    client: AsyncClient,
+    other_user_bearer_token_header: dict[str, str],
+    public_group_in_db: Group,
+    group_membership_in_db: GroupMembership,
+):
+    update_data = {"membership_status": "MODERATOR"}
+    response: Response = await client.put(
+        f"/groups/{public_group_in_db.id}/members/{group_membership_in_db.id}/",
+        json=update_data,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1
+
+    response: Response = await client.put(
+        f"/groups/{public_group_in_db.id}/members/{group_membership_in_db.id}/",
+        json=update_data,
+        headers=other_user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1

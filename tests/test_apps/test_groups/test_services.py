@@ -9,6 +9,7 @@ from src.apps.groups.models import (
     Group,
     GroupInputSchema,
     GroupMembership,
+    GroupMembershipUpdateSchema,
     GroupOutputSchema,
     GroupRequest,
     GroupRequestUpdateSchema,
@@ -525,3 +526,56 @@ async def test_group_service_correctly_filters_group_membership_by_id(
     assert membership.group_id == group_membership_in_db.group_id
     assert membership.user_id == group_membership_in_db.user_id
     assert membership.membership_status == group_membership_in_db.membership_status
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_updates_group_membership(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_membership_in_db: GroupMembership,
+    session: AsyncSession,
+):
+    schema = GroupMembershipUpdateSchema(**{"membership_status": "MODERATOR"})
+    membership = await GroupService.update_membership(
+        schema=schema,
+        group_id=public_group_in_db.id,
+        membership_id=group_membership_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert membership.membership_status == "MODERATOR"
+
+
+@pytest.mark.asyncio
+async def test_group_service_raises_exceptions_on_invalid_update_group_membership(
+    user_in_db: User,
+    other_user_in_db: User,
+    public_group_in_db: Group,
+    group_membership_in_db: GroupMembership,
+    session: AsyncSession,
+):
+    schema = GroupMembershipUpdateSchema(**{"membership_status": "MODERATOR"})
+    with pytest.raises(PermissionDeniedException):
+        membership = await GroupService.update_membership(
+            schema=schema,
+            group_id=public_group_in_db.id,
+            membership_id=group_membership_in_db.id,
+            request_user=other_user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        membership = await GroupService.update_membership(
+            schema=schema,
+            group_id=uuid4(),
+            membership_id=group_membership_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        membership = await GroupService.update_membership(
+            schema=schema,
+            group_id=public_group_in_db.id,
+            membership_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )

@@ -11,6 +11,7 @@ from src.dependencies.users import authenticate_user, get_user_or_none
 from src.apps.groups.models import (
     GroupMembership,
     GroupMembershipOutputSchema,
+    GroupMembershipUpdateSchema,
     GroupOutputSchema,
     GroupInputSchema,
     Group,
@@ -266,13 +267,21 @@ async def get_group_member_by_id(
     response_model=GroupMembershipOutputSchema,
 )
 async def update_group_member(
+    schema: GroupMembershipUpdateSchema,
     group_id: UUID,
     membership_id: UUID,
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
 ) -> GroupMembershipOutputSchema:
-    ...
+    membership = await group_service.update_membership(
+        schema=schema,
+        group_id=group_id,
+        membership_id=membership_id,
+        request_user=request_user,
+        session=session,
+    )
+    return GroupMembershipOutputSchema.from_orm(membership)
 
 
 @group_router.delete(

@@ -65,6 +65,10 @@ class GroupMembershipOutputSchema(SQLModel):
     membership_status: GroupMemberStatus
 
 
+class GroupMembershipUpdateSchema(SQLModel):
+    membership_status: GroupMemberStatus
+
+
 class Group(TimeStampedUUIDModelBase, table=True):
     name: str = Field(sa_column=Column("name", String, unique=True))
     description: str

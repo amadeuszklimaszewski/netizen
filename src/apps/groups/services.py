@@ -14,6 +14,7 @@ from src.apps.groups.models import (
     Group,
     GroupInputSchema,
     GroupMembership,
+    GroupMembershipUpdateSchema,
     GroupRequest,
     GroupRequestUpdateSchema,
 )
@@ -45,6 +46,33 @@ class GroupService:
         session.add(membership)
         await session.commit()
         await session.refresh(membership)
+        return membership
+
+    @classmethod
+    async def update_membership(
+        cls,
+        schema: GroupMembershipUpdateSchema,
+        group_id: UUID,
+        membership_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ) -> GroupMembership:
+        request_user_membership = await cls._find_membership_or_raise_exception(
+            group_id=group_id, user_id=request_user.id, session=session
+        )
+        await validate_user_is_moderator_or_admin(membership=request_user_membership)
+        membership = await get_object_by_id(
+            Table=GroupMembership, id=membership_id, session=session
+        )
+        update_data = schema.dict()
+        await session.exec(
+            update(GroupMembership)
+            .where(GroupMembership.id == membership_id)
+            .values(**update_data)
+        )
+
+        await session.refresh(membership)
+
         return membership
 
     @classmethod
