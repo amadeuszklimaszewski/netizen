@@ -114,6 +114,23 @@ async def delete_group(
     return {}
 
 
+@group_router.delete(
+    "/{group_id}/leave/",
+    tags=["groups-members"],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def leave_group(
+    group_id: UUID,
+    group_service: GroupService = Depends(),
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+):
+    await group_service.delete_membership(
+        group_id=group_id, user=request_user, session=session
+    )
+    return {}
+
+
 @group_router.post(
     "/{group_id}/join/",
     tags=["groups-requests"],
@@ -130,23 +147,6 @@ async def join_to_group(
         group_id=group_id, request_user=request_user, session=session
     )
     return GroupRequestOutputSchema.from_orm(request)
-
-
-@group_router.delete(
-    "/{group_id}/leave/",
-    tags=["groups-members"],
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-async def leave_group(
-    group_id: UUID,
-    group_service: GroupService = Depends(),
-    request_user: User = Depends(authenticate_user),
-    session: AsyncSession = Depends(get_db),
-):
-    await group_service.delete_membership(
-        group_id=group_id, user=request_user, session=session
-    )
-    return {}
 
 
 @group_router.get(
@@ -238,30 +238,36 @@ async def get_group_members(
 
 
 @group_router.get(
-    "/{group_id}/members/{member_id}/",
+    "/{group_id}/members/{membership_id}/",
     tags=["groups-members"],
     status_code=status.HTTP_200_OK,
     response_model=GroupMembershipOutputSchema,
 )
 async def get_group_member_by_id(
     group_id: UUID,
-    member_id: UUID,
+    membership_id: UUID,
     group_service: GroupService = Depends(),
-    request_user: User = Depends(authenticate_user),
+    request_user: User = Depends(get_user_or_none),
     session: AsyncSession = Depends(get_db),
 ) -> GroupMembershipOutputSchema:
-    ...
+    membership = await group_service.filter_get_group_member_by_id(
+        group_id=group_id,
+        membership_id=membership_id,
+        request_user=request_user,
+        session=session,
+    )
+    return GroupMembershipOutputSchema.from_orm(membership)
 
 
 @group_router.put(
-    "/{group_id}/members/{member_id}/",
+    "/{group_id}/members/{membership_id}/",
     tags=["groups-members"],
     status_code=status.HTTP_200_OK,
     response_model=GroupMembershipOutputSchema,
 )
 async def update_group_member(
     group_id: UUID,
-    member_id: UUID,
+    membership_id: UUID,
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
@@ -270,14 +276,14 @@ async def update_group_member(
 
 
 @group_router.delete(
-    "/{group_id}/members/{member_id}/",
+    "/{group_id}/members/{membership_id}/",
     tags=["groups-members"],
     status_code=status.HTTP_200_OK,
     response_model=GroupMembershipOutputSchema,
 )
 async def delete_group_member(
     group_id: UUID,
-    member_id: UUID,
+    membership_id: UUID,
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),

@@ -108,6 +108,23 @@ class GroupService:
             )
         ).all()
 
+    @classmethod
+    async def filter_get_group_member_by_id(
+        cls,
+        group_id: UUID,
+        membership_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ):
+        group = await cls.filter_get_group_by_id(
+            group_id=group_id, request_user=request_user, session=session
+        )
+
+        membership = await get_object_by_id(
+            Table=GroupMembership, id=membership_id, session=session
+        )
+        return membership
+
     # --- --- Groups --- ---
 
     @classmethod

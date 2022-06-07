@@ -421,3 +421,43 @@ async def test_anonymous_user_cannot_get_closed_group_members_list(
 
     response_body = response.json()
     assert len(response_body) == 1
+
+
+@pytest.mark.asyncio
+async def test_admin_user_can_get_group_membership_by_id(
+    client: AsyncSession,
+    user_bearer_token_header: dict[str, str],
+    group_membership_in_db: GroupMembership,
+    public_group_in_db: Group,
+):
+    response: Response = await client.get(
+        f"/groups/{public_group_in_db.id}/members/{group_membership_in_db.id}/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+
+    assert response_body["group_id"] == str(group_membership_in_db.group_id)
+    assert response_body["user_id"] == str(group_membership_in_db.user_id)
+    assert (
+        response_body["membership_status"] == group_membership_in_db.membership_status
+    )
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_can_get_group_membership_by_id(
+    client: AsyncSession,
+    group_membership_in_db: GroupMembership,
+    public_group_in_db: Group,
+):
+    response: Response = await client.get(
+        f"/groups/{public_group_in_db.id}/members/{group_membership_in_db.id}/",
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+
+    assert response_body["group_id"] == str(group_membership_in_db.group_id)
+    assert response_body["user_id"] == str(group_membership_in_db.user_id)
+    assert (
+        response_body["membership_status"] == group_membership_in_db.membership_status
+    )

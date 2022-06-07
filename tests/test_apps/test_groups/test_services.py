@@ -506,3 +506,22 @@ async def test_group_service_filters_get_closed_group_members_raises_permission_
             request_user=other_user_in_db,
             session=session,
         )
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_group_membership_by_id(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_membership_in_db: GroupMembership,
+    session: AsyncSession,
+):
+
+    membership = await GroupService.filter_get_group_member_by_id(
+        group_id=public_group_in_db.id,
+        membership_id=group_membership_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert membership.group_id == group_membership_in_db.group_id
+    assert membership.user_id == group_membership_in_db.user_id
+    assert membership.membership_status == group_membership_in_db.membership_status
