@@ -6,7 +6,14 @@ from fastapi_another_jwt_auth import AuthJWT
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.apps.users.models import User, UserOutputSchema, LoginSchema, RegisterSchema
+from src.apps.users.models import (
+    FriendOutputSchema,
+    FriendRequestOutputSchema,
+    User,
+    UserOutputSchema,
+    LoginSchema,
+    RegisterSchema,
+)
 from src.apps.users.services import UserService
 from src.apps.jwt.schemas import TokenSchema
 from src.database.connection import get_db
@@ -89,3 +96,101 @@ async def get_user(
 ) -> UserOutputSchema:
     result = await session.exec(select(User).where(User.id == user_id))
     return User.from_orm(result.first())
+
+
+@user_router.get(
+    "/profile/friends/",
+    tags=["users-friends"],
+    dependencies=[Depends(authenticate_user)],
+    status_code=status.HTTP_200_OK,
+    response_model=UserOutputSchema,
+)
+async def get_user(
+    user_id: UUID, session: AsyncSession = Depends(get_db)
+) -> list[FriendOutputSchema]:
+    ...
+
+
+@user_router.get(
+    "/profile/friends/{friend_id}/",
+    tags=["users-friends"],
+    dependencies=[Depends(authenticate_user)],
+    status_code=status.HTTP_200_OK,
+    response_model=UserOutputSchema,
+)
+async def get_friend_by_id(
+    user_id: UUID, session: AsyncSession = Depends(get_db)
+) -> FriendOutputSchema:
+    ...
+
+
+@user_router.delete(
+    "/profile/friends/{friend_id}/",
+    tags=["users-friends"],
+    dependencies=[Depends(authenticate_user)],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def remove_friend(user_id: UUID, session: AsyncSession = Depends(get_db)):
+    ...
+
+
+@user_router.post(
+    "/{user_id}/add_friend/",
+    tags=["friends"],
+    dependencies=[Depends(authenticate_user)],
+    status_code=status.HTTP_200_OK,
+    response_model=UserOutputSchema,
+)
+async def send_friend_request(
+    user_id: UUID, session: AsyncSession = Depends(get_db)
+) -> FriendRequestOutputSchema:
+    ...
+
+
+@user_router.delete(
+    "/{user_id}/remove_friend/",
+    tags=["friends"],
+    dependencies=[Depends(authenticate_user)],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def remove_friend(user_id: UUID, session: AsyncSession = Depends(get_db)):
+    ...
+
+
+@user_router.get(
+    "/profile/friends/requests/",
+    tags=["friends"],
+    dependencies=[Depends(authenticate_user)],
+    status_code=status.HTTP_200_OK,
+    response_model=UserOutputSchema,
+)
+async def get_friend_requests(
+    session: AsyncSession = Depends(get_db),
+) -> list[FriendRequestOutputSchema]:
+    ...
+
+
+@user_router.get(
+    "/profile/friends/requests/",
+    tags=["friends"],
+    dependencies=[Depends(authenticate_user)],
+    status_code=status.HTTP_200_OK,
+    response_model=UserOutputSchema,
+)
+async def get_friend_request_by_id(
+    session: AsyncSession = Depends(get_db),
+) -> FriendRequestOutputSchema:
+    ...
+
+
+@user_router.put(
+    "/profile/friends/requests/{friend_request_id}/",
+    tags=["friends"],
+    dependencies=[Depends(authenticate_user)],
+    status_code=status.HTTP_200_OK,
+    response_model=UserOutputSchema,
+)
+async def update_friend_request(
+    friend_request_id: UUID, session: AsyncSession = Depends(get_db)
+) -> FriendRequestOutputSchema:
+    ...

@@ -9,12 +9,10 @@ from src.database.connection import get_db
 from src.apps.users.models import User
 from src.dependencies.users import authenticate_user, get_user_or_none
 from src.apps.groups.models import (
-    GroupMembership,
     GroupMembershipOutputSchema,
     GroupMembershipUpdateSchema,
     GroupOutputSchema,
     GroupInputSchema,
-    Group,
     GroupRequestOutputSchema,
     GroupRequestUpdateSchema,
 )
@@ -138,7 +136,7 @@ async def leave_group(
     status_code=status.HTTP_201_CREATED,
     response_model=GroupRequestOutputSchema,
 )
-async def join_to_group(
+async def join_group(
     group_id: UUID,
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),

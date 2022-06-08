@@ -1,9 +1,11 @@
 import datetime as dt
+from uuid import UUID
 from dateutil.relativedelta import relativedelta
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Optional
 from pydantic import validator, validate_email as validate_email_pd
 from sqlmodel import Relationship, SQLModel, Field, Column, String
 from sqlalchemy.orm import relationship
+from src.apps.users.enums import FriendRequestStatus
 from src.core.models import TimeStampedUUIDModelBase
 
 if TYPE_CHECKING:
@@ -41,6 +43,28 @@ class User(TimeStampedUUIDModelBase, UserBase, table=True):
         )
     )
 
+    received_friend_requests: list["FriendRequest"] = Relationship(
+        sa_relationship=relationship(
+            "FriendRequest",
+            cascade="all, delete",
+            back_populates="receiver_user",
+        )
+    )
+    sent_friend_requests: list["FriendRequest"] = Relationship(
+        sa_relationship=relationship(
+            "FriendRequest",
+            cascade="all, delete",
+            back_populates="sender_user",
+        )
+    )
+    friends: list["Friend"] = Relationship(
+        sa_relationship=relationship(
+            "Friend",
+            cascade="all, delete",
+            back_populates="user",
+        )
+    )
+
 
 class LoginSchema(SQLModel):
     email: str
@@ -67,3 +91,43 @@ class RegisterSchema(UserBase):
         if password2 != values["password"]:
             raise ValueError("Passwords do not match")
         return password2
+
+
+class Friend(TimeStampedUUIDModelBase, table=True):
+    user_id: UUID = Field(foreign_key="user.id")
+    friend_user_id: UUID = Field(foreign_key="user.id")
+
+    user: Optional["User"] = Relationship(
+        sa_relationship=relationship("User", back_populates="friends")
+    )
+    friend: Optional["User"] = Relationship(
+        sa_relationship=relationship("User", back_populates="memberships")
+    )
+
+
+class FriendOutputSchema(TimeStampedUUIDModelBase):
+    user_id: UUID
+    friend_user_id: UUID
+
+
+class FriendRequest(TimeStampedUUIDModelBase, table=True):
+    from_user_id: UUID = Field(foreign_key="user.id")
+    to_user_id: UUID = Field(foreign_key="user.id")
+    status: FriendRequestStatus
+
+    sender_user: Optional["User"] = Relationship(
+        sa_relationship=relationship("User", back_populates="sent_friend_requests")
+    )
+    receiver_user: Optional["User"] = Relationship(
+        sa_relationship=relationship("User", back_populates="received_friend_requests")
+    )
+
+
+class FriendRequestOutputSchema(TimeStampedUUIDModelBase):
+    from_user_id: UUID
+    to_user_id: UUID
+    status: FriendRequestStatus
+
+
+class FriendRequestUpdateSchema(SQLModel):
+    status: FriendRequestStatus

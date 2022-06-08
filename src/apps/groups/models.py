@@ -59,7 +59,7 @@ class GroupMembership(TimeStampedUUIDModelBase, table=True):
     )
 
 
-class GroupMembershipOutputSchema(SQLModel):
+class GroupMembershipOutputSchema(TimeStampedUUIDModelBase):
     group_id: UUID
     user_id: UUID
     membership_status: GroupMemberStatus
@@ -90,7 +90,7 @@ class Group(TimeStampedUUIDModelBase, table=True):
     )
 
 
-class GroupOutputSchema(SQLModel):
+class GroupOutputSchema(TimeStampedUUIDModelBase):
     name: str
     description: str
     status: GroupStatus
