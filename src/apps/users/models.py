@@ -100,9 +100,6 @@ class Friend(TimeStampedUUIDModelBase, table=True):
     user: Optional["User"] = Relationship(
         sa_relationship=relationship("User", back_populates="friends")
     )
-    friend: Optional["User"] = Relationship(
-        sa_relationship=relationship("User", back_populates="memberships")
-    )
 
 
 class FriendOutputSchema(TimeStampedUUIDModelBase):

@@ -9,12 +9,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.users.models import (
     FriendOutputSchema,
     FriendRequestOutputSchema,
+    FriendRequestUpdateSchema,
     User,
     UserOutputSchema,
     LoginSchema,
     RegisterSchema,
 )
-from src.apps.users.services import UserService
+from src.apps.users.services import FriendService, UserService
 from src.apps.jwt.schemas import TokenSchema
 from src.database.connection import get_db
 from src.dependencies.users import authenticate_user
@@ -101,96 +102,188 @@ async def get_user(
 @user_router.get(
     "/profile/friends/",
     tags=["users-friends"],
-    dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_200_OK,
-    response_model=UserOutputSchema,
+    response_model=list[FriendRequestOutputSchema],
 )
 async def get_user(
-    user_id: UUID, session: AsyncSession = Depends(get_db)
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
+    session: AsyncSession = Depends(get_db),
 ) -> list[FriendOutputSchema]:
-    ...
+    return [
+        FriendOutputSchema.from_orm(friend)
+        for friend in (
+            await friend_service.filter_friend_list(
+                request_user=request_user, session=session
+            )
+        )
+    ]
 
 
 @user_router.get(
     "/profile/friends/{friend_id}/",
     tags=["users-friends"],
-    dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_200_OK,
-    response_model=UserOutputSchema,
+    response_model=FriendRequestOutputSchema,
 )
 async def get_friend_by_id(
-    user_id: UUID, session: AsyncSession = Depends(get_db)
+    friend_id: UUID,
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
+    session: AsyncSession = Depends(get_db),
 ) -> FriendOutputSchema:
-    ...
+    friend = await friend_service.filter_friend_by_id(
+        friend_id=friend_id, request_user=request_user, session=session
+    )
+    return FriendOutputSchema.from_orm(friend)
 
 
 @user_router.delete(
     "/profile/friends/{friend_id}/",
     tags=["users-friends"],
-    dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def remove_friend(user_id: UUID, session: AsyncSession = Depends(get_db)):
-    ...
+async def remove_friend(
+    friend_id: UUID,
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
+    session: AsyncSession = Depends(get_db),
+):
+    await friend_service.delete_friend(
+        friend_id=friend_id, request_user=request_user, session=session
+    )
+    return {}
 
 
 @user_router.post(
     "/{user_id}/add_friend/",
     tags=["friends"],
-    dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_200_OK,
-    response_model=UserOutputSchema,
+    response_model=FriendRequestOutputSchema,
 )
 async def send_friend_request(
-    user_id: UUID, session: AsyncSession = Depends(get_db)
+    user_id: UUID,
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
+    session: AsyncSession = Depends(get_db),
 ) -> FriendRequestOutputSchema:
-    ...
+    request = friend_service.create_friend_request(
+        user_id=user_id, request_user=request_user, session=session
+    )
+    return FriendRequestOutputSchema.from_orm(request)
 
 
 @user_router.delete(
     "/{user_id}/remove_friend/",
     tags=["friends"],
-    dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def remove_friend(user_id: UUID, session: AsyncSession = Depends(get_db)):
-    ...
+async def remove_friend(
+    user_id: UUID,
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
+    session: AsyncSession = Depends(get_db),
+):
+    await friend_service.delete_friend(
+        friend_id=user_id, request_user=request_user, session=session
+    )
+    return {}
 
 
 @user_router.get(
-    "/profile/friends/requests/",
+    "/profile/requests/",
     tags=["friends"],
     dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_200_OK,
     response_model=UserOutputSchema,
 )
-async def get_friend_requests(
+async def get_received_friend_requests(
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> list[FriendRequestOutputSchema]:
-    ...
+    return [
+        FriendRequestOutputSchema.from_orm(friend)
+        for friend in (
+            await friend_service.filter_received_friend_requests(
+                request_user=request_user, session=session
+            )
+        )
+    ]
 
 
 @user_router.get(
-    "/profile/friends/requests/",
+    "/profile/requests/sent/",
     tags=["friends"],
-    dependencies=[Depends(authenticate_user)],
+    status_code=status.HTTP_200_OK,
+    response_model=list[FriendRequestOutputSchema],
+)
+async def get_sent_friend_requests(
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
+    session: AsyncSession = Depends(get_db),
+) -> list[FriendRequestOutputSchema]:
+    return [
+        FriendOutputSchema.from_orm(friend)
+        for friend in (
+            await friend_service.filter_sent_friend_requests(
+                request_user=request_user, session=session
+            )
+        )
+    ]
+
+
+@user_router.get(
+    "/profile/requests/sent/{friend_request_id}/",
+    tags=["friends"],
+    status_code=status.HTTP_200_OK,
+    response_model=FriendRequestOutputSchema,
+)
+async def get_sent_friend_request_by_id(
+    friend_request_id: UUID,
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
+    session: AsyncSession = Depends(get_db),
+) -> FriendRequestOutputSchema:
+    request = await friend_service.filter_sent_friend_requests_by_id(
+        friend_request_id=friend_request_id, request_user=request_user, session=session
+    )
+    return FriendRequestOutputSchema.from_orm(request)
+
+
+@user_router.get(
+    "/profile/requests/{friend_request_id}/",
+    tags=["friends"],
     status_code=status.HTTP_200_OK,
     response_model=UserOutputSchema,
 )
-async def get_friend_request_by_id(
+async def get_received_friend_request_by_id(
+    friend_request_id: UUID,
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> FriendRequestOutputSchema:
-    ...
+    request = await friend_service.filter_received_friend_request_by_id(
+        friend_request_id=friend_request_id, request_user=request_user, session=session
+    )
+    return FriendRequestOutputSchema.from_orm(request)
 
 
 @user_router.put(
-    "/profile/friends/requests/{friend_request_id}/",
+    "/profile/requests/{friend_request_id}/",
     tags=["friends"],
     dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_200_OK,
     response_model=UserOutputSchema,
 )
 async def update_friend_request(
-    friend_request_id: UUID, session: AsyncSession = Depends(get_db)
+    update_schema: FriendRequestUpdateSchema,
+    friend_request_id: UUID,
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
+    session: AsyncSession = Depends(get_db),
 ) -> FriendRequestOutputSchema:
-    ...
+    request = await friend_service.update_friend_request(
+        schema=update_schema, request_user=request_user, session=session
+    )
+    return FriendRequestOutputSchema.from_orm(request)

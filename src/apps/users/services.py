@@ -1,7 +1,9 @@
+from uuid import UUID
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.users.models import (
+    FriendRequestUpdateSchema,
     User,
     UserOutputSchema,
     RegisterSchema,
@@ -54,4 +56,81 @@ class UserService:
 
     @classmethod
     def send_activation_email(cls, email: str):
+        ...
+
+
+class FriendService:
+    @classmethod
+    async def create_friend(
+        session: AsyncSession,
+    ):
+        ...
+
+    @classmethod
+    async def delete_friend(
+        friend_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ):
+        ...
+
+    @classmethod
+    async def filter_friend_list(
+        request_user: User,
+        session: AsyncSession,
+    ):
+        ...
+
+    @classmethod
+    async def filter_friend_by_id(
+        friend_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ):
+        ...
+
+    @classmethod
+    async def create_friend_request(
+        user_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ):
+        ...
+
+    @classmethod
+    async def update_friend_request(
+        schema: FriendRequestUpdateSchema,
+        request_user: User,
+        session: AsyncSession,
+    ):
+        ...
+
+    @classmethod
+    async def filter_received_friend_requests(
+        request_user: User,
+        session: AsyncSession,
+    ):
+        ...
+
+    @classmethod
+    async def filter_received_friend_request_by_id(
+        friend_request_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ):
+        ...
+
+    @classmethod
+    async def filter_sent_friend_requests(
+        request_user: User,
+        session: AsyncSession,
+    ):
+        ...
+
+    @classmethod
+    async def filter_sent_friend_requests_by_id(
+        friend_request_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ):
         ...
