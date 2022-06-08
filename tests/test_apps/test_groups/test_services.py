@@ -2,7 +2,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import and_
 from sqlalchemy.orm import selectinload
-from sqlmodel import select, update
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.groups.models import (
@@ -105,20 +105,6 @@ async def test_group_service_correctly_filters_groups_without_user(
     assert private_group_in_db in groups
     assert closed_group_in_db not in groups
 
-
-@pytest.mark.asyncio
-async def test_group_service_correctly_filters_groups_without_user(
-    public_group_in_db: Group,
-    private_group_in_db: Group,
-    closed_group_in_db: Group,
-    session: AsyncSession,
-):
-    groups = await GroupService.filter_get_group_list(
-        request_user=None, session=session
-    )
-    assert len(groups) == 2
-    assert public_group_in_db in groups
-    assert private_group_in_db in groups
     assert closed_group_in_db not in groups
 
 
@@ -225,7 +211,7 @@ async def test_group_service_correctly_filters_public_group_by_id_with_no_user(
 
 
 @pytest.mark.asyncio
-async def test_group_service_raises_permission_denied_exception_with_closed_group(
+async def test_filter_public_group_by_id_raises_permission_denied_exception_with_closed_group(
     other_user_in_db: User,
     closed_group_in_db: Group,
     session: AsyncSession,
@@ -279,7 +265,7 @@ async def test_group_service_correctly_removes_user_from_group(
 
 
 @pytest.mark.asyncio
-async def test_group_service_raises_exception_on_remove_when_user_is_not_a_member(
+async def test_remove_membership_by_user_id_raises_exception_when_user_is_not_a_member(
     other_user_in_db: User,
     public_group_in_db: Group,
     session: AsyncSession,
@@ -307,7 +293,7 @@ async def test_group_service_correctly_filters_group_requests(
 
 
 @pytest.mark.asyncio
-async def test_group_service_correctly_excludes_accepted_requests(
+async def test_filter_get_group_request_list_correctly_excludes_accepted_requests(
     user_in_db: User,
     public_group_in_db: Group,
     group_request_in_db: GroupRequest,
@@ -324,7 +310,7 @@ async def test_group_service_correctly_excludes_accepted_requests(
 
 
 @pytest.mark.asyncio
-async def test_group_service_raises_permission_denied_on_get_group_request_list(
+async def test_filter_get_group_request_list_raises_permission_denied_with_invalid_user(
     other_user_in_db: User,
     public_group_in_db: Group,
     group_request_in_db: GroupRequest,
@@ -546,7 +532,7 @@ async def test_group_service_correctly_updates_group_membership(
 
 
 @pytest.mark.asyncio
-async def test_group_service_raises_exceptions_on_invalid_update_group_membership(
+async def test_update_group_membership_correctly_raises_exceptions(
     user_in_db: User,
     other_user_in_db: User,
     public_group_in_db: Group,
@@ -604,7 +590,7 @@ async def test_group_service_correctly_deletes_group_membership_by_id(
 
 
 @pytest.mark.asyncio
-async def test_group_service_raises_exceptinos_on_invalid_delete_group_membership_by_id(
+async def test_group_service_delete_group_membership_by_id_correctly_raises_exceptions(
     user_in_db: User,
     other_user_in_db: User,
     public_group_in_db: Group,
