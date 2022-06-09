@@ -1,3 +1,4 @@
+from re import U
 from typing import Union
 from sqlalchemy import and_, or_
 from uuid import UUID
@@ -139,8 +140,11 @@ class FriendService:
         cls,
         request_user: User,
         session: AsyncSession,
-    ):
-        ...
+    ) -> list[Friend]:
+        friends = (
+            await session.exec(select(Friend).where(Friend.user_id == request_user.id))
+        ).all()
+        return friends
 
     @classmethod
     async def filter_friend_by_id(
@@ -148,8 +152,11 @@ class FriendService:
         friend_id: UUID,
         request_user: User,
         session: AsyncSession,
-    ):
-        ...
+    ) -> Friend:
+        friend = cls._find_friend(user_id=request_user.id, friend_id=friend_id)
+        if friend is None:
+            raise DoesNotExistException("Could not find friend with given id.")
+        return friend
 
     @classmethod
     async def create_friend_request(

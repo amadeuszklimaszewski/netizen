@@ -11,14 +11,15 @@ from src.apps.users.models import User
 from src.core.exceptions import (
     AlreadyExistsException,
     DoesNotExistException,
-    GroupRequestAlreadyHandled,
     PermissionDeniedException,
 )
 
 
 @pytest.mark.asyncio
 async def test_friend_service_correctly_creates_friend_request(
-    user_in_db: User, other_user_in_db: User, session: AsyncSession
+    user_in_db: User,
+    other_user_in_db: User,
+    session: AsyncSession,
 ):
     friend_request = await FriendService.create_friend_request(
         user_id=other_user_in_db.id,
@@ -31,7 +32,9 @@ async def test_friend_service_correctly_creates_friend_request(
 
 @pytest.mark.asyncio
 async def test_create_friend_request_raises_exception_with_pending_request(
-    user_in_db: User, other_user_in_db: User, session: AsyncSession
+    user_in_db: User,
+    other_user_in_db: User,
+    session: AsyncSession,
 ):
     friend_request = FriendRequest(
         to_user_id=other_user_in_db.id, from_user_id=user_in_db.id, status="PENDING"
@@ -48,7 +51,9 @@ async def test_create_friend_request_raises_exception_with_pending_request(
 
 @pytest.mark.asyncio
 async def test_create_friend_request_does_not_raise_exception_with_denied_request(
-    user_in_db: User, other_user_in_db: User, session: AsyncSession
+    user_in_db: User,
+    other_user_in_db: User,
+    session: AsyncSession,
 ):
     friend_request = FriendRequest(
         to_user_id=other_user_in_db.id, from_user_id=user_in_db.id, status="DENIED"
@@ -67,7 +72,9 @@ async def test_create_friend_request_does_not_raise_exception_with_denied_reques
 
 @pytest.mark.asyncio
 async def test_create_friend_request_does_not_raise_exception_with_accepted_request(
-    user_in_db: User, other_user_in_db: User, session: AsyncSession
+    user_in_db: User,
+    other_user_in_db: User,
+    session: AsyncSession,
 ):
     friend_request = FriendRequest(
         to_user_id=other_user_in_db.id, from_user_id=user_in_db.id, status="ACCEPTED"
@@ -86,7 +93,9 @@ async def test_create_friend_request_does_not_raise_exception_with_accepted_requ
 
 @pytest.mark.asyncio
 async def test_create_friend_request_raises_exception_with_existing_friend(
-    user_in_db: User, other_user_in_db: User, session: AsyncSession
+    user_in_db: User,
+    other_user_in_db: User,
+    session: AsyncSession,
 ):
     friend = await FriendService.create_friend(
         user_id=user_in_db.id, friend_id=other_user_in_db.id, session=session
@@ -97,3 +106,18 @@ async def test_create_friend_request_raises_exception_with_existing_friend(
             request_user=user_in_db,
             session=session,
         )
+
+
+@pytest.mark.asyncio
+async def test_friend_service_correctly_filters_friend_list(
+    user_in_db: User,
+    other_user_in_db: User,
+    friends_in_db: tuple[Friend],
+    session: AsyncSession,
+):
+    friends = await FriendService.filter_friend_list(
+        request_user=user_in_db,
+        session=session,
+    )
+    assert friends[0] == friends_in_db[0]
+    assert friends[0].friend_user_id == other_user_in_db.id

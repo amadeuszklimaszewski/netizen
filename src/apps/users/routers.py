@@ -8,6 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.users.models import (
     FriendOutputSchema,
+    FriendRequest,
     FriendRequestOutputSchema,
     FriendRequestUpdateSchema,
     User,
@@ -104,7 +105,7 @@ async def get_user(
     "/profile/friends/",
     tags=["users-friends"],
     status_code=status.HTTP_200_OK,
-    response_model=list[FriendRequestOutputSchema],
+    response_model=list[FriendOutputSchema],
 )
 async def get_user(
     request_user: User = Depends(authenticate_user),
@@ -125,7 +126,7 @@ async def get_user(
     "/profile/friends/{friend_id}/",
     tags=["users-friends"],
     status_code=status.HTTP_200_OK,
-    response_model=FriendRequestOutputSchema,
+    response_model=FriendOutputSchema,
 )
 async def get_friend_by_id(
     friend_id: UUID,
@@ -196,7 +197,7 @@ async def remove_friend(
     tags=["friends"],
     dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_200_OK,
-    response_model=UserOutputSchema,
+    response_model=FriendRequestOutputSchema,
 )
 async def get_received_friend_requests(
     request_user: User = Depends(authenticate_user),
@@ -273,7 +274,7 @@ async def delete_friend_request(
     "/profile/requests/{friend_request_id}/",
     tags=["friends"],
     status_code=status.HTTP_200_OK,
-    response_model=UserOutputSchema,
+    response_model=FriendRequestOutputSchema,
 )
 async def get_received_friend_request_by_id(
     friend_request_id: UUID,
@@ -292,7 +293,7 @@ async def get_received_friend_request_by_id(
     tags=["friends"],
     dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_200_OK,
-    response_model=UserOutputSchema,
+    response_model=FriendRequestOutputSchema,
 )
 async def update_friend_request(
     update_schema: FriendRequestUpdateSchema,
