@@ -239,7 +239,12 @@ class FriendService:
         request_user: User,
         session: AsyncSession,
     ):
-        ...
+        received_requests = (
+            await session.exec(
+                select(FriendRequest).where(FriendRequest.to_user_id == request_user.id)
+            )
+        ).all()
+        return received_requests
 
     @classmethod
     async def filter_received_friend_request_by_id(
@@ -256,7 +261,14 @@ class FriendService:
         request_user: User,
         session: AsyncSession,
     ):
-        ...
+        sent_requests = (
+            await session.exec(
+                select(FriendRequest).where(
+                    FriendRequest.from_user_id == request_user.id
+                )
+            )
+        ).all()
+        return sent_requests
 
     @classmethod
     async def filter_sent_friend_requests_by_id(

@@ -194,7 +194,22 @@ async def friend_request_in_db(
     session: AsyncSession,
 ) -> FriendRequest:
     friend_request = FriendRequest(
-        from_user_id=user_in_db.id, to_user_id=other_user_in_db.id
+        from_user_id=user_in_db.id, to_user_id=other_user_in_db.id, status="PENDING"
+    )
+    session.add(friend_request)
+    await session.commit()
+    await session.refresh(friend_request)
+    return friend_request
+
+
+@pytest_asyncio.fixture
+async def received_friend_request_in_db(
+    user_in_db: User,
+    other_user_in_db: User,
+    session: AsyncSession,
+) -> FriendRequest:
+    friend_request = FriendRequest(
+        from_user_id=other_user_in_db.id, to_user_id=user_in_db.id, status="PENDING"
     )
     session.add(friend_request)
     await session.commit()

@@ -197,7 +197,7 @@ async def remove_friend(
     tags=["friends"],
     dependencies=[Depends(authenticate_user)],
     status_code=status.HTTP_200_OK,
-    response_model=FriendRequestOutputSchema,
+    response_model=list[FriendRequestOutputSchema],
 )
 async def get_received_friend_requests(
     request_user: User = Depends(authenticate_user),
@@ -226,7 +226,7 @@ async def get_sent_friend_requests(
     session: AsyncSession = Depends(get_db),
 ) -> list[FriendRequestOutputSchema]:
     return [
-        FriendOutputSchema.from_orm(friend)
+        FriendRequestOutputSchema.from_orm(friend)
         for friend in (
             await friend_service.filter_sent_friend_requests(
                 request_user=request_user, session=session

@@ -156,3 +156,33 @@ async def test__filter_friend_by_id_raises_exception_with_invalid_friend_id(
             request_user=user_in_db,
             session=session,
         )
+
+
+@pytest.mark.asyncio
+async def test_friend_service_correctly_filters_received_friend_request_list(
+    user_in_db: User,
+    other_user_in_db: User,
+    received_friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    friends = await FriendService.filter_received_friend_requests(
+        request_user=user_in_db,
+        session=session,
+    )
+    assert friends[0].to_user_id == user_in_db.id
+    assert friends[0].from_user_id == other_user_in_db.id
+
+
+@pytest.mark.asyncio
+async def test_friend_service_correctly_filters_sent_friend_request_list(
+    user_in_db: User,
+    other_user_in_db: User,
+    friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    friends = await FriendService.filter_sent_friend_requests(
+        request_user=user_in_db,
+        session=session,
+    )
+    assert friends[0].to_user_id == other_user_in_db.id
+    assert friends[0].from_user_id == user_in_db.id
