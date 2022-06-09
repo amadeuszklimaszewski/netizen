@@ -157,9 +157,9 @@ async def remove_friend(
 
 
 @user_router.post(
-    "/{user_id}/add_friend/",
+    "/{user_id}/add-friend/",
     tags=["friends"],
-    status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_201_CREATED,
     response_model=FriendRequestOutputSchema,
 )
 async def send_friend_request(
@@ -168,14 +168,14 @@ async def send_friend_request(
     friend_service: FriendService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> FriendRequestOutputSchema:
-    request = friend_service.create_friend_request(
+    request = await friend_service.create_friend_request(
         user_id=user_id, request_user=request_user, session=session
     )
     return FriendRequestOutputSchema.from_orm(request)
 
 
 @user_router.delete(
-    "/{user_id}/remove_friend/",
+    "/{user_id}/remove-friend/",
     tags=["friends"],
     status_code=status.HTTP_204_NO_CONTENT,
 )
@@ -252,6 +252,23 @@ async def get_sent_friend_request_by_id(
     return FriendRequestOutputSchema.from_orm(request)
 
 
+@user_router.delete(
+    "/profile/requests/sent/{friend_request_id}/",
+    tags=["friends"],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_friend_request(
+    friend_request_id: UUID,
+    request_user: User = Depends(authenticate_user),
+    friend_service: FriendService = Depends(),
+    session: AsyncSession = Depends(get_db),
+) -> FriendRequestOutputSchema:
+    request = await friend_service.delete_friend_request(
+        friend_request_id=friend_request_id, request_user=request_user, session=session
+    )
+    return FriendRequestOutputSchema.from_orm(request)
+
+
 @user_router.get(
     "/profile/requests/{friend_request_id}/",
     tags=["friends"],
@@ -285,6 +302,9 @@ async def update_friend_request(
     session: AsyncSession = Depends(get_db),
 ) -> FriendRequestOutputSchema:
     request = await friend_service.update_friend_request(
-        schema=update_schema, request_user=request_user, session=session
+        schema=update_schema,
+        request_user=request_user,
+        friend_request_id=friend_request_id,
+        session=session,
     )
     return FriendRequestOutputSchema.from_orm(request)

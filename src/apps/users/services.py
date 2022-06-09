@@ -1,8 +1,12 @@
+from typing import Union
+from sqlalchemy import and_, or_
 from uuid import UUID
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.users.models import (
+    Friend,
+    FriendRequest,
     FriendRequestUpdateSchema,
     User,
     RegisterSchema,
@@ -10,6 +14,7 @@ from src.apps.users.models import (
 from src.apps.users.utils import pwd_context
 from src.core.exceptions import (
     AlreadyExistsException,
+    DoesNotExistException,
     InvalidCredentialsException,
 )
 
@@ -60,13 +65,69 @@ class UserService:
 
 class FriendService:
     @classmethod
+    async def _find_friend(
+        cls, user_id: UUID, friend_id: UUID, session: AsyncSession
+    ) -> list[Union[Friend, None]]:
+        friends = (
+            await session.exec(
+                select(Friend).where(
+                    or_(
+                        and_(
+                            Friend.user_id == user_id,
+                            Friend.friend_user_id == friend_id,
+                        ),
+                        and_(
+                            Friend.friend_user_id == user_id,
+                            Friend.user_id == friend_id,
+                        ),
+                    )
+                )
+            )
+        ).all()
+        return friends
+
+    @classmethod
+    async def _find_friend_request(
+        cls, user_id: UUID, friend_id: UUID, session: AsyncSession
+    ):
+        friend_request = (
+            await session.exec(
+                select(FriendRequest).where(
+                    or_(
+                        and_(
+                            FriendRequest.from_user_id == user_id,
+                            FriendRequest.to_user_id == friend_id,
+                            FriendRequest.status == "PENDING",
+                        ),
+                        and_(
+                            FriendRequest.from_user_id == friend_id,
+                            FriendRequest.to_user_id == user_id,
+                            FriendRequest.status == "PENDING",
+                        ),
+                    )
+                )
+            )
+        ).first()
+        return friend_request
+
+    @classmethod
     async def create_friend(
+        cls,
+        user_id: UUID,
+        friend_id: UUID,
         session: AsyncSession,
     ):
-        ...
+        friend1 = Friend(user_id=user_id, friend_user_id=friend_id)
+        friend2 = Friend(user_id=friend_id, friend_user_id=user_id)
+        session.add(friend1)
+        session.add(friend2)
+        await session.commit()
+        await session.refresh(friend1)
+        return friend1
 
     @classmethod
     async def delete_friend(
+        cls,
         friend_id: UUID,
         request_user: User,
         session: AsyncSession,
@@ -75,6 +136,7 @@ class FriendService:
 
     @classmethod
     async def filter_friend_list(
+        cls,
         request_user: User,
         session: AsyncSession,
     ):
@@ -82,6 +144,7 @@ class FriendService:
 
     @classmethod
     async def filter_friend_by_id(
+        cls,
         friend_id: UUID,
         request_user: User,
         session: AsyncSession,
@@ -90,15 +153,46 @@ class FriendService:
 
     @classmethod
     async def create_friend_request(
+        cls,
         user_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ):
+        friends = await cls._find_friend(
+            user_id=request_user.id, friend_id=user_id, session=session
+        )
+        if friends != []:
+            raise AlreadyExistsException("You are already friends with this person.")
+
+        request = await cls._find_friend_request(
+            user_id=request_user.id, friend_id=user_id, session=session
+        )
+        if request is not None:
+            raise AlreadyExistsException("Unhandled friend request exists.")
+
+        request = FriendRequest(
+            from_user_id=request_user.id, to_user_id=user_id, status="PENDING"
+        )
+
+        session.add(request)
+        await session.commit()
+        await session.refresh(request)
+        return request
+
+    @classmethod
+    async def update_friend_request(
+        cls,
+        schema: FriendRequestUpdateSchema,
+        friend_request_id: UUID,
         request_user: User,
         session: AsyncSession,
     ):
         ...
 
     @classmethod
-    async def update_friend_request(
-        schema: FriendRequestUpdateSchema,
+    async def delete_friend_request(
+        cls,
+        friend_request_id: UUID,
         request_user: User,
         session: AsyncSession,
     ):
@@ -106,6 +200,7 @@ class FriendService:
 
     @classmethod
     async def filter_received_friend_requests(
+        cls,
         request_user: User,
         session: AsyncSession,
     ):
@@ -113,6 +208,7 @@ class FriendService:
 
     @classmethod
     async def filter_received_friend_request_by_id(
+        cls,
         friend_request_id: UUID,
         request_user: User,
         session: AsyncSession,
@@ -121,6 +217,7 @@ class FriendService:
 
     @classmethod
     async def filter_sent_friend_requests(
+        cls,
         request_user: User,
         session: AsyncSession,
     ):
@@ -128,6 +225,7 @@ class FriendService:
 
     @classmethod
     async def filter_sent_friend_requests_by_id(
+        cls,
         friend_request_id: UUID,
         request_user: User,
         session: AsyncSession,

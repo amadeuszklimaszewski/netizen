@@ -12,7 +12,13 @@ from src.apps.groups.models import (
 from src.apps.groups.services import GroupService
 
 from src.apps.users.services import UserService
-from src.apps.users.models import User, UserOutputSchema, RegisterSchema
+from src.apps.users.models import (
+    Friend,
+    FriendRequest,
+    User,
+    UserOutputSchema,
+    RegisterSchema,
+)
 
 
 # Users
@@ -163,3 +169,34 @@ async def group_membership_in_db(
     await session.commit()
     await session.refresh(membership)
     return membership
+
+
+@pytest_asyncio.fixture
+async def friends_in_db(
+    user_in_db: User,
+    other_user_in_db: User,
+    session: AsyncSession,
+) -> tuple[Friend]:
+    friend1 = Friend(user_id=user_in_db.id, friend_user_id=other_user_in_db.id)
+    friend2 = Friend(user_id=other_user_in_db.id, friend_user_id=user_in_db.id)
+    session.add(friend1)
+    session.add(friend2)
+    await session.commit()
+    await session.refresh(friend1)
+    await session.refresh(friend2)
+    return (friend1, friend2)
+
+
+@pytest_asyncio.fixture
+async def friend_request_in_db(
+    user_in_db: User,
+    other_user_in_db: User,
+    session: AsyncSession,
+) -> FriendRequest:
+    friend_request = FriendRequest(
+        from_user_id=user_in_db.id, to_user_id=other_user_in_db.id
+    )
+    session.add(friend_request)
+    await session.commit()
+    await session.refresh(friend_request)
+    return friend_request

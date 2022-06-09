@@ -102,7 +102,9 @@ class Friend(TimeStampedUUIDModelBase, table=True):
 
     user: Optional["User"] = Relationship(
         sa_relationship=relationship(
-            "User", back_populates="friends", primaryjoin="Friend.user_id == User.id"
+            "User",
+            back_populates="friends",
+            primaryjoin="Friend.user_id == User.id",
         )
     )
 
