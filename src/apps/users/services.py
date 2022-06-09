@@ -5,7 +5,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.users.models import (
     FriendRequestUpdateSchema,
     User,
-    UserOutputSchema,
     RegisterSchema,
 )
 from src.apps.users.utils import pwd_context

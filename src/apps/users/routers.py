@@ -17,6 +17,7 @@ from src.apps.users.models import (
 )
 from src.apps.users.services import FriendService, UserService
 from src.apps.jwt.schemas import TokenSchema
+from src.core.utils import get_object_by_id
 from src.database.connection import get_db
 from src.dependencies.users import authenticate_user
 
@@ -69,8 +70,8 @@ async def login_user(
     response_model=list[UserOutputSchema],
 )
 async def get_users(session: AsyncSession = Depends(get_db)) -> list[UserOutputSchema]:
-    result = await session.exec(select(User))
-    return [UserOutputSchema.from_orm(user) for user in result.all()]
+    users = (await session.exec(select(User))).all()
+    return [UserOutputSchema.from_orm(user) for user in users]
 
 
 @user_router.get(
@@ -95,8 +96,8 @@ async def get_logged_user(
 async def get_user(
     user_id: UUID, session: AsyncSession = Depends(get_db)
 ) -> UserOutputSchema:
-    result = await session.exec(select(User).where(User.id == user_id))
-    return User.from_orm(result.first())
+    user = await get_object_by_id(Table=User, id=user_id, session=session)
+    return User.from_orm(user)
 
 
 @user_router.get(

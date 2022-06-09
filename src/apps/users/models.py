@@ -43,27 +43,27 @@ class User(TimeStampedUUIDModelBase, UserBase, table=True):
         )
     )
 
-    received_friend_requests: list["FriendRequest"] = Relationship(
-        sa_relationship=relationship(
-            "FriendRequest",
-            cascade="all, delete",
-            back_populates="receiver_user",
-        )
-    )
-    sent_friend_requests: list["FriendRequest"] = Relationship(
-        sa_relationship=relationship(
-            "FriendRequest",
-            cascade="all, delete",
-            back_populates="sender_user",
-        )
-    )
-    friends: list["Friend"] = Relationship(
-        sa_relationship=relationship(
-            "Friend",
-            cascade="all, delete",
-            back_populates="user",
-        )
-    )
+    # received_friend_requests: list["FriendRequest"] = Relationship(
+    #     sa_relationship=relationship(
+    #         "FriendRequest",
+    #         cascade="all, delete",
+    #         back_populates="receiver_user",
+    #     )
+    # )
+    # sent_friend_requests: list["FriendRequest"] = Relationship(
+    #     sa_relationship=relationship(
+    #         "FriendRequest",
+    #         cascade="all, delete",
+    #         back_populates="sender_user",
+    #     )
+    # )
+    # friends: list["Friend"] = Relationship(
+    #     sa_relationship=relationship(
+    #         "Friend",
+    #         cascade="all, delete",
+    #         back_populates="user",
+    #     )
+    # )
 
 
 class LoginSchema(SQLModel):
@@ -97,9 +97,9 @@ class Friend(TimeStampedUUIDModelBase, table=True):
     user_id: UUID = Field(foreign_key="user.id")
     friend_user_id: UUID = Field(foreign_key="user.id")
 
-    user: Optional["User"] = Relationship(
-        sa_relationship=relationship("User", back_populates="friends")
-    )
+    # user: Optional["User"] = Relationship(
+    #     sa_relationship=relationship("User", back_populates="friends")
+    # )
 
 
 class FriendOutputSchema(TimeStampedUUIDModelBase):
@@ -112,12 +112,12 @@ class FriendRequest(TimeStampedUUIDModelBase, table=True):
     to_user_id: UUID = Field(foreign_key="user.id")
     status: FriendRequestStatus
 
-    sender_user: Optional["User"] = Relationship(
-        sa_relationship=relationship("User", back_populates="sent_friend_requests")
-    )
-    receiver_user: Optional["User"] = Relationship(
-        sa_relationship=relationship("User", back_populates="received_friend_requests")
-    )
+    # sender_user: Optional["User"] = Relationship(
+    #     sa_relationship=relationship("User", back_populates="sent_friend_requests")
+    # )
+    # receiver_user: Optional["User"] = Relationship(
+    #     sa_relationship=relationship("User", back_populates="received_friend_requests")
+    # )
 
 
 class FriendRequestOutputSchema(TimeStampedUUIDModelBase):
