@@ -1,5 +1,6 @@
 from re import U
 from typing import Union
+from pytest import Session
 from sqlalchemy import and_, or_
 from uuid import UUID
 from sqlmodel import select
@@ -67,7 +68,7 @@ class UserService:
 class FriendService:
     @classmethod
     async def _find_friend(
-        cls, user_id: UUID, friend_id: UUID, session: AsyncSession
+        cls, user_id: UUID, friend_user_id: UUID, session: AsyncSession
     ) -> list[Union[Friend, None]]:
         friends = (
             await session.exec(
@@ -75,11 +76,11 @@ class FriendService:
                     or_(
                         and_(
                             Friend.user_id == user_id,
-                            Friend.friend_user_id == friend_id,
+                            Friend.friend_user_id == friend_user_id,
                         ),
                         and_(
                             Friend.friend_user_id == user_id,
-                            Friend.user_id == friend_id,
+                            Friend.user_id == friend_user_id,
                         ),
                     )
                 )
@@ -88,8 +89,24 @@ class FriendService:
         return friends
 
     @classmethod
-    async def _find_friend_request(
+    async def _find_friend_by_id(
         cls, user_id: UUID, friend_id: UUID, session: AsyncSession
+    ) -> Union[Friend, None]:
+        friend = (
+            await session.exec(
+                select(Friend).where(
+                    and_(
+                        Friend.user_id == user_id,
+                        Friend.id == friend_id,
+                    )
+                )
+            )
+        ).first()
+        return friend
+
+    @classmethod
+    async def _find_friend_request(
+        cls, user_id: UUID, friend_user_id: UUID, session: AsyncSession
     ):
         friend_request = (
             await session.exec(
@@ -97,11 +114,11 @@ class FriendService:
                     or_(
                         and_(
                             FriendRequest.from_user_id == user_id,
-                            FriendRequest.to_user_id == friend_id,
+                            FriendRequest.to_user_id == friend_user_id,
                             FriendRequest.status == "PENDING",
                         ),
                         and_(
-                            FriendRequest.from_user_id == friend_id,
+                            FriendRequest.from_user_id == friend_user_id,
                             FriendRequest.to_user_id == user_id,
                             FriendRequest.status == "PENDING",
                         ),
@@ -117,7 +134,7 @@ class FriendService:
         user_id: UUID,
         friend_id: UUID,
         session: AsyncSession,
-    ):
+    ) -> Friend:
         friend1 = Friend(user_id=user_id, friend_user_id=friend_id)
         friend2 = Friend(user_id=friend_id, friend_user_id=user_id)
         session.add(friend1)
@@ -133,7 +150,16 @@ class FriendService:
         request_user: User,
         session: AsyncSession,
     ):
-        ...
+        friend1 = await cls._find_friend_by_id(
+            user_id=request_user.id, friend_id=friend_id, session=session
+        )
+        friend2 = await cls._find_friend_by_id(
+            user_id=friend_id, friend_id=request_user.id, session=session
+        )
+        for friend in (friend1, friend2):
+            session.delete(friend)
+        await session.commit()
+        return
 
     @classmethod
     async def filter_friend_list(
@@ -153,7 +179,9 @@ class FriendService:
         request_user: User,
         session: AsyncSession,
     ) -> Friend:
-        friend = cls._find_friend(user_id=request_user.id, friend_id=friend_id)
+        friend = await cls._find_friend_by_id(
+            user_id=request_user.id, friend_id=friend_id, session=session
+        )
         if friend is None:
             raise DoesNotExistException("Could not find friend with given id.")
         return friend
@@ -166,13 +194,13 @@ class FriendService:
         session: AsyncSession,
     ):
         friends = await cls._find_friend(
-            user_id=request_user.id, friend_id=user_id, session=session
+            user_id=request_user.id, friend_user_id=user_id, session=session
         )
         if friends != []:
             raise AlreadyExistsException("You are already friends with this person.")
 
         request = await cls._find_friend_request(
-            user_id=request_user.id, friend_id=user_id, session=session
+            user_id=request_user.id, friend_user_id=user_id, session=session
         )
         if request is not None:
             raise AlreadyExistsException("Unhandled friend request exists.")
