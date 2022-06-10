@@ -281,10 +281,22 @@ class FriendService:
         return sent_requests
 
     @classmethod
-    async def filter_sent_friend_requests_by_id(
+    async def filter_sent_friend_request_by_id(
         cls,
         friend_request_id: UUID,
         request_user: User,
         session: AsyncSession,
     ) -> FriendRequest:
-        ...
+        sent_request = (
+            await session.exec(
+                select(FriendRequest).where(
+                    and_(
+                        FriendRequest.id == friend_request_id,
+                        FriendRequest.from_user_id == request_user.id,
+                    )
+                )
+            )
+        ).first()
+        if sent_request is None:
+            raise DoesNotExistException("Friend with given id does not exist.")
+        return sent_request

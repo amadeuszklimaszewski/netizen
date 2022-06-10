@@ -238,3 +238,54 @@ async def test_filter_received_friend_request_by_id_raises_does_not_exist_with_w
             request_user=user_in_db,
             session=session,
         )
+
+
+@pytest.mark.asyncio
+async def test_friend_service_correctly_filters_sent_friend_request_by_id(
+    user_in_db: User,
+    other_user_in_db: User,
+    friends_in_db: tuple[Friend],
+    friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    friend_request = await FriendService.filter_sent_friend_request_by_id(
+        friend_request_id=friend_request_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert friend_request.id == friend_request_in_db.id
+    assert friend_request.to_user_id == friend_request_in_db.to_user_id
+    assert friend_request.from_user_id == friend_request_in_db.from_user_id
+    assert friend_request.status == friend_request_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_filter_sent_friend_request_by_id_raises_does_not_exist_with_received_request(
+    user_in_db: User,
+    other_user_in_db: User,
+    friends_in_db: tuple[Friend],
+    received_friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        friend_request = await FriendService.filter_sent_friend_request_by_id(
+            friend_request_id=received_friend_request_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_filter_sent_friend_request_by_id_raises_does_not_exist_with_wrong_id(
+    user_in_db: User,
+    other_user_in_db: User,
+    friends_in_db: tuple[Friend],
+    friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        friend_request = await FriendService.filter_sent_friend_request_by_id(
+            friend_request_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )

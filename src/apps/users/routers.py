@@ -247,7 +247,7 @@ async def get_sent_friend_request_by_id(
     friend_service: FriendService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> FriendRequestOutputSchema:
-    request = await friend_service.filter_sent_friend_requests_by_id(
+    request = await friend_service.filter_sent_friend_request_by_id(
         friend_request_id=friend_request_id, request_user=request_user, session=session
     )
     return FriendRequestOutputSchema.from_orm(request)
