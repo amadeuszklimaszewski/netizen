@@ -16,7 +16,9 @@ from src.core.exceptions import (
     AlreadyExistsException,
     DoesNotExistException,
     InvalidCredentialsException,
+    PermissionDeniedException,
 )
+from src.core.utils import get_object_by_id
 
 
 class UserService:
@@ -148,14 +150,17 @@ class FriendService:
         request_user: User,
         session: AsyncSession,
     ):
-        friend1 = await cls._find_friend_by_id(
-            user_id=request_user.id, friend_id=friend_id, session=session
+        friend = await get_object_by_id(Table=Friend, id=friend_id, session=session)
+        if friend.user != request_user:
+            raise PermissionDeniedException("Not authorized.")
+
+        friendship = await cls._find_friend(
+            user_id=friend.user_id,
+            friend_user_id=friend.friend_user_id,
+            session=session,
         )
-        friend2 = await cls._find_friend_by_id(
-            user_id=friend_id, friend_id=request_user.id, session=session
-        )
-        for friend in (friend1, friend2):
-            session.delete(friend)
+        for friend in friendship:
+            await session.delete(friend)
         await session.commit()
         return
 
@@ -262,7 +267,7 @@ class FriendService:
             )
         ).first()
         if received_request is None:
-            raise DoesNotExistException("Friend with given id does not exist.")
+            raise DoesNotExistException("Friend request with given id does not exist.")
         return received_request
 
     @classmethod
@@ -298,5 +303,5 @@ class FriendService:
             )
         ).first()
         if sent_request is None:
-            raise DoesNotExistException("Friend with given id does not exist.")
+            raise DoesNotExistException("Friend request with given id does not exist.")
         return sent_request

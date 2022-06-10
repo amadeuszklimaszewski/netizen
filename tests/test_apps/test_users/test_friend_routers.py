@@ -3,6 +3,7 @@ from httpx import AsyncClient, Response, head
 import pytest
 
 from src.apps.users.models import User, Friend, FriendRequest
+from tests.test_apps.conftest import friends_in_db
 
 
 @pytest.mark.asyncio
@@ -155,3 +156,31 @@ async def test_user_can_get_received_friend_request_by_id(
     assert response_body["to_user_id"] == str(friend_request_in_db.to_user_id)
     assert response_body["from_user_id"] == str(friend_request_in_db.from_user_id)
     assert response_body["status"] == friend_request_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_user_can_delete_friend(
+    client: AsyncClient,
+    user_in_db: User,
+    friends_in_db: list[Friend],
+    user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.delete(
+        f"/users/profile/friends/{friends_in_db[0].id}/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+@pytest.mark.asyncio
+async def test_user_cannot_delete_invalid_friend(
+    client: AsyncClient,
+    user_in_db: User,
+    friends_in_db: list[Friend],
+    user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.delete(
+        f"/users/profile/friends/{friends_in_db[1].id}/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED

@@ -1,4 +1,3 @@
-from re import A
 from uuid import uuid4
 import pytest
 from sqlalchemy import and_
@@ -279,7 +278,6 @@ async def test_filter_sent_friend_request_by_id_raises_does_not_exist_with_recei
 async def test_filter_sent_friend_request_by_id_raises_does_not_exist_with_wrong_id(
     user_in_db: User,
     other_user_in_db: User,
-    friends_in_db: tuple[Friend],
     friend_request_in_db: FriendRequest,
     session: AsyncSession,
 ):
@@ -289,3 +287,56 @@ async def test_filter_sent_friend_request_by_id_raises_does_not_exist_with_wrong
             request_user=user_in_db,
             session=session,
         )
+
+
+@pytest.mark.asyncio
+async def test_friend_service_correctly_deletes_friendship(
+    user_in_db: User,
+    other_user_in_db: User,
+    friends_in_db: tuple[Friend],
+    session: AsyncSession,
+):
+    await FriendService.delete_friend(
+        friend_id=friends_in_db[0].id, request_user=user_in_db, session=session
+    )
+    result = (await session.exec(select(Friend))).all()
+    assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_friend_raises_exception_with_invalid_friendship_id(
+    user_in_db: User,
+    other_user_in_db: User,
+    friends_in_db: tuple[Friend],
+    session: AsyncSession,
+):
+    with pytest.raises(PermissionDeniedException):
+        await FriendService.delete_friend(
+            friend_id=friends_in_db[1].id, request_user=user_in_db, session=session
+        )
+    result = (await session.exec(select(Friend))).all()
+    assert len(result) == 2
+
+    with pytest.raises(DoesNotExistException):
+        await FriendService.delete_friend(
+            friend_id=uuid4(), request_user=user_in_db, session=session
+        )
+    result = (await session.exec(select(Friend))).all()
+    assert len(result) == 2
+
+
+@pytest.mark.asyncio
+async def test_delete_friend_raises_exception_with_invalid_user(
+    user_in_db: User,
+    other_user_in_db: User,
+    friends_in_db: tuple[Friend],
+    session: AsyncSession,
+):
+    with pytest.raises(PermissionDeniedException):
+        await FriendService.delete_friend(
+            friend_id=friends_in_db[0].id,
+            request_user=other_user_in_db,
+            session=session,
+        )
+    result = (await session.exec(select(Friend))).all()
+    assert len(result) == 2
