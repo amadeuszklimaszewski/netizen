@@ -549,3 +549,50 @@ async def test_anonymous_or_regular_user_cannot_delete_group_member(
 
     response_body = response.json()
     assert len(response_body) == 1
+
+
+@pytest.mark.asyncio
+async def test_user_can_get_user_group_request_list(
+    client: AsyncClient,
+    other_user_bearer_token_header: dict[str, str],
+    group_request_in_db: GroupRequest,
+):
+    response: Response = await client.get(
+        "/groups/requests/", headers=other_user_bearer_token_header
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+    assert len(response_body) == 1
+    assert response_body[0]["id"] == str(group_request_in_db.id)
+    assert response_body[0]["user_id"] == str(group_request_in_db.user_id)
+    assert response_body[0]["status"] == group_request_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_user_can_get_user_group_request_by_id(
+    client: AsyncClient,
+    other_user_bearer_token_header: dict[str, str],
+    group_request_in_db: GroupRequest,
+):
+    response: Response = await client.get(
+        f"/groups/requests/{group_request_in_db.id}/",
+        headers=other_user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+    assert response_body["id"] == str(group_request_in_db.id)
+    assert response_body["user_id"] == str(group_request_in_db.user_id)
+    assert response_body["status"] == group_request_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_user_can_delete_user_group_request(
+    client: AsyncClient,
+    other_user_bearer_token_header: dict[str, str],
+    group_request_in_db: GroupRequest,
+):
+    response: Response = await client.delete(
+        f"/groups/requests/{group_request_in_db.id}/",
+        headers=other_user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_204_NO_CONTENT

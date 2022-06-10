@@ -1,8 +1,7 @@
 from uuid import uuid4
 import pytest
-from sqlalchemy import and_
 from sqlalchemy.orm import selectinload
-from sqlmodel import select
+from sqlmodel import select, update, and_
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.groups.models import (
@@ -611,3 +610,95 @@ async def test_group_service_delete_group_membership_by_id_correctly_raises_exce
             request_user=user_in_db,
             session=session,
         )
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_get_user_group_request_list(
+    other_user_in_db: User,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    requests = await GroupService.filter_get_user_group_request_list(
+        request_user=other_user_in_db, session=session
+    )
+    assert len(requests) == 1
+    assert requests[0].id == group_request_in_db.id
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_filters_get_user_group_request_by_id(
+    other_user_in_db: User,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    request = await GroupService.filter_get_user_group_request_by_id(
+        request_id=group_request_in_db.id,
+        request_user=other_user_in_db,
+        session=session,
+    )
+    assert request.user_id == group_request_in_db.user_id
+    assert request.group_id == group_request_in_db.group_id
+
+
+@pytest.mark.asyncio
+async def test_filter_get_user_group_request_by_id_raises_exception_with_invalid_id(
+    other_user_in_db: User,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        request = await GroupService.filter_get_user_group_request_by_id(
+            request_id=uuid4(),
+            request_user=other_user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_filter_get_user_group_request_by_id_raises_exception_with_wrong_user(
+    user_in_db: User,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(PermissionDeniedException):
+        request = await GroupService.filter_get_user_group_request_by_id(
+            request_id=group_request_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_group_service_correctly_deletes_user_group_request(
+    other_user_in_db: User,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    await GroupService.delete_user_group_request(
+        request_id=group_request_in_db.id,
+        request_user=other_user_in_db,
+        session=session,
+    )
+    result = (await session.exec(select(GroupRequest))).all()
+    assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_user_group_request_raises_exception_with_handled_request(
+    other_user_in_db: User,
+    group_request_in_db: GroupRequest,
+    session: AsyncSession,
+):
+    await session.exec(
+        update(GroupRequest)
+        .where(GroupRequest.id == group_request_in_db.id)
+        .values(**{"status": "DENIED"})
+    )
+    with pytest.raises(GroupRequestAlreadyHandled):
+        await GroupService.delete_user_group_request(
+            request_id=group_request_in_db.id,
+            request_user=other_user_in_db,
+            session=session,
+        )
+    result = (await session.exec(select(GroupRequest))).all()
+    assert len(result) == 1

@@ -31,7 +31,7 @@ class GroupRequest(TimeStampedUUIDModelBase, table=True):
     )
 
 
-class GroupRequestOutputSchema(SQLModel):
+class GroupRequestOutputSchema(TimeStampedUUIDModelBase):
     group_id: UUID
     user_id: UUID
     status: GroupRequestStatus

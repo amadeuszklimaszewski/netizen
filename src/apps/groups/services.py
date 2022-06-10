@@ -369,3 +369,45 @@ class GroupService:
             group_id=group_id, request_id=request_id, session=session
         )
         return request
+
+    @classmethod
+    async def filter_get_user_group_request_list(
+        cls,
+        request_user: User,
+        session: AsyncSession,
+    ) -> list[GroupRequest]:
+        requests = (
+            await session.exec(
+                select(GroupRequest).where(
+                    and_(
+                        GroupRequest.user_id == request_user.id,
+                        GroupRequest.status == "PENDING",
+                    )
+                )
+            )
+        ).all()
+        return requests
+
+    @classmethod
+    async def filter_get_user_group_request_by_id(
+        cls, request_id: UUID, request_user: User, session: AsyncSession
+    ) -> GroupRequest:
+        request = await get_object_by_id(
+            Table=GroupRequest, id=request_id, session=session
+        )
+        if request.user != request_user:
+            raise PermissionDeniedException("Invalid group request id.")
+        return request
+
+    @classmethod
+    async def delete_user_group_request(
+        cls, request_id: UUID, request_user: User, session: AsyncSession
+    ):
+        request = await cls.filter_get_user_group_request_by_id(
+            request_id=request_id, request_user=request_user, session=session
+        )
+        if request.status != "PENDING":
+            raise GroupRequestAlreadyHandled("Group request was already handled.")
+        await session.delete(request)
+        await session.commit()
+        return

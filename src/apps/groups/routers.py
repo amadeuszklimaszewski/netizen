@@ -23,6 +23,66 @@ group_router = APIRouter(prefix="/groups")
 
 
 @group_router.get(
+    "/requests/",
+    tags=["user-group-requests"],
+    status_code=status.HTTP_200_OK,
+    response_model=list[GroupRequestOutputSchema],
+)
+async def get_user_group_requests(
+    group_service: GroupService = Depends(),
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+) -> list[GroupRequestOutputSchema]:
+    return [
+        GroupRequestOutputSchema.from_orm(group_request)
+        for group_request in (
+            await group_service.filter_get_user_group_request_list(
+                request_user=request_user, session=session
+            )
+        )
+    ]
+
+
+@group_router.get(
+    "/requests/{request_id}/",
+    tags=["user-group-requests"],
+    status_code=status.HTTP_200_OK,
+    response_model=GroupRequestOutputSchema,
+)
+async def get_user_group_request_by_id(
+    request_id: UUID,
+    group_service: GroupService = Depends(),
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+) -> GroupRequestOutputSchema:
+    request = await group_service.filter_get_user_group_request_by_id(
+        request_id=request_id,
+        request_user=request_user,
+        session=session,
+    )
+    return GroupRequestOutputSchema.from_orm(request)
+
+
+@group_router.delete(
+    "/requests/{request_id}/",
+    tags=["user-group-requests"],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_user_group_request(
+    request_id: UUID,
+    group_service: GroupService = Depends(),
+    request_user: User = Depends(authenticate_user),
+    session: AsyncSession = Depends(get_db),
+) -> GroupRequestOutputSchema:
+    await group_service.delete_user_group_request(
+        request_id=request_id,
+        request_user=request_user,
+        session=session,
+    )
+    return {}
+
+
+@group_router.get(
     "/",
     tags=["groups"],
     status_code=status.HTTP_200_OK,
@@ -115,7 +175,7 @@ async def delete_group(
 
 @group_router.delete(
     "/{group_id}/leave/",
-    tags=["groups-members"],
+    tags=["group-members"],
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def leave_group(
@@ -132,7 +192,7 @@ async def leave_group(
 
 @group_router.post(
     "/{group_id}/join/",
-    tags=["groups-requests"],
+    tags=["user-group-requests"],
     status_code=status.HTTP_201_CREATED,
     response_model=GroupRequestOutputSchema,
 )
@@ -150,7 +210,7 @@ async def join_group(
 
 @group_router.get(
     "/{group_id}/requests/",
-    tags=["groups-requests"],
+    tags=["group-requests"],
     status_code=status.HTTP_200_OK,
     response_model=list[GroupRequestOutputSchema],
 )
@@ -172,7 +232,7 @@ async def get_group_requests(
 
 @group_router.get(
     "/{group_id}/requests/{request_id}/",
-    tags=["groups-requests"],
+    tags=["group-requests"],
     status_code=status.HTTP_200_OK,
     response_model=GroupRequestOutputSchema,
 )
@@ -194,7 +254,7 @@ async def get_group_request_by_id(
 
 @group_router.put(
     "/{group_id}/requests/{request_id}/",
-    tags=["groups-requests"],
+    tags=["group-requests"],
     status_code=status.HTTP_200_OK,
     response_model=GroupRequestOutputSchema,
 )
@@ -218,7 +278,7 @@ async def update_group_request(
 
 @group_router.get(
     "/{group_id}/members/",
-    tags=["groups-members"],
+    tags=["group-members"],
     status_code=status.HTTP_200_OK,
     response_model=list[GroupMembershipOutputSchema],
 )
@@ -238,7 +298,7 @@ async def get_group_members(
 
 @group_router.get(
     "/{group_id}/members/{membership_id}/",
-    tags=["groups-members"],
+    tags=["group-members"],
     status_code=status.HTTP_200_OK,
     response_model=GroupMembershipOutputSchema,
 )
@@ -260,7 +320,7 @@ async def get_group_member_by_id(
 
 @group_router.put(
     "/{group_id}/members/{membership_id}/",
-    tags=["groups-members"],
+    tags=["group-members"],
     status_code=status.HTTP_200_OK,
     response_model=GroupMembershipOutputSchema,
 )
@@ -284,7 +344,7 @@ async def update_group_member(
 
 @group_router.delete(
     "/{group_id}/members/{membership_id}/",
-    tags=["groups-members"],
+    tags=["group-members"],
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_group_member(
