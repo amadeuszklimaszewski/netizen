@@ -103,7 +103,7 @@ async def get_user(
 
 @user_router.get(
     "/profile/friends/",
-    tags=["users-friends"],
+    tags=["user-friends"],
     status_code=status.HTTP_200_OK,
     response_model=list[FriendOutputSchema],
 )
@@ -124,7 +124,7 @@ async def get_user(
 
 @user_router.get(
     "/profile/friends/{friend_id}/",
-    tags=["users-friends"],
+    tags=["user-friends"],
     status_code=status.HTTP_200_OK,
     response_model=FriendOutputSchema,
 )
@@ -142,7 +142,7 @@ async def get_friend_by_id(
 
 @user_router.delete(
     "/profile/friends/{friend_id}/",
-    tags=["users-friends"],
+    tags=["user-friends"],
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def remove_friend(

@@ -18,15 +18,15 @@ class UserBase(SQLModel):
     first_name: str
     last_name: str
     birthday: dt.date
-    is_active: bool = True
 
 
 class UserOutputSchema(TimeStampedUUIDModelBase, UserBase):
-    ...
+    is_active: bool
 
 
 class User(TimeStampedUUIDModelBase, UserBase, table=True):
     hashed_password: str
+    is_active: bool = True
 
     membership_requests: list["GroupRequest"] = Relationship(
         sa_relationship=relationship(

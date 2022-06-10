@@ -171,6 +171,9 @@ async def group_membership_in_db(
     return membership
 
 
+# Friends
+
+
 @pytest_asyncio.fixture
 async def friends_in_db(
     user_in_db: User,

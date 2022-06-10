@@ -12,19 +12,25 @@ from src.core.exceptions import (
     PermissionDeniedException,
 )
 
-app = FastAPI(title="Netizen", description="API for a social network", version="1.0")
+app = FastAPI(
+    title="Netizen",
+    description="API for a social network",
+    version="1.0",
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc",
+)
+
+
+# ----- Routing -----
+
 
 router = APIRouter(prefix="/api/v1")
 
 router.include_router(user_router)
 router.include_router(jwt_router)
 router.include_router(group_router)
+
 app.include_router(router)
-
-
-@app.get("/")
-async def root():
-    return {"message": "Hello world"}
 
 
 # ----- Exception handlers -----
