@@ -467,6 +467,8 @@ async def test_update_friend_request_raises_exception_on_invalid_user(
             request_user=other_user_in_db,
             session=session,
         )
+    result = (await session.exec(select(Friend))).all()
+    assert len(result) == 0
 
 
 @pytest.mark.asyncio
@@ -485,6 +487,8 @@ async def test_update_friend_request_raises_exception_on_invalid_request_id(
             request_user=user_in_db,
             session=session,
         )
+    result = (await session.exec(select(Friend))).all()
+    assert len(result) == 0
 
 
 @pytest.mark.asyncio
@@ -503,6 +507,8 @@ async def test_update_friend_request_raises_exception_on_sent_request(
             request_user=user_in_db,
             session=session,
         )
+    result = (await session.exec(select(Friend))).all()
+    assert len(result) == 0
 
 
 @pytest.mark.asyncio
@@ -527,3 +533,5 @@ async def test_update_friend_request_raises_exception_on_handled_request(
             request_user=user_in_db,
             session=session,
         )
+    result = (await session.exec(select(Friend))).all()
+    assert len(result) == 0
