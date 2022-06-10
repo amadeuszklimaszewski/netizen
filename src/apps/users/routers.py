@@ -263,11 +263,11 @@ async def delete_friend_request(
     request_user: User = Depends(authenticate_user),
     friend_service: FriendService = Depends(),
     session: AsyncSession = Depends(get_db),
-) -> FriendRequestOutputSchema:
-    request = await friend_service.delete_friend_request(
+):
+    await friend_service.delete_friend_request(
         friend_request_id=friend_request_id, request_user=request_user, session=session
     )
-    return FriendRequestOutputSchema.from_orm(request)
+    return {}
 
 
 @user_router.get(

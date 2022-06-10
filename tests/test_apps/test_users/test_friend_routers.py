@@ -184,3 +184,31 @@ async def test_user_cannot_delete_invalid_friend(
         headers=user_bearer_token_header,
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.asyncio
+async def test_user_can_delete_friend_request(
+    client: AsyncClient,
+    user_in_db: User,
+    friend_request_in_db: FriendRequest,
+    user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.delete(
+        f"/users/profile/requests/sent/{friend_request_in_db.id}/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+@pytest.mark.asyncio
+async def test_other_user_cannot_delete_friend_request(
+    client: AsyncClient,
+    user_in_db: User,
+    friend_request_in_db: FriendRequest,
+    other_user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.delete(
+        f"/users/profile/requests/sent/{friend_request_in_db.id}/",
+        headers=other_user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND

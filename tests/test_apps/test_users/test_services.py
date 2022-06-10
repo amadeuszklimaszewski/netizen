@@ -340,3 +340,70 @@ async def test_delete_friend_raises_exception_with_invalid_user(
         )
     result = (await session.exec(select(Friend))).all()
     assert len(result) == 2
+
+
+@pytest.mark.asyncio
+async def test_friend_service_correctly_deletes_friend_request(
+    user_in_db: User,
+    other_user_in_db: User,
+    friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    await FriendService.delete_friend_request(
+        friend_request_id=friend_request_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    result = (await session.exec(select(FriendRequest))).all()
+    assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_friend_request_raises_exception_with_received_request(
+    user_in_db: User,
+    other_user_in_db: User,
+    received_friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        await FriendService.delete_friend_request(
+            friend_request_id=received_friend_request_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    result = (await session.exec(select(FriendRequest))).all()
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_delete_friend_request_raises_exception_with_invalid_request(
+    user_in_db: User,
+    other_user_in_db: User,
+    friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        await FriendService.delete_friend_request(
+            friend_request_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )
+    result = (await session.exec(select(FriendRequest))).all()
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_delete_friend_request_raises_exception_with_invalid_user(
+    user_in_db: User,
+    other_user_in_db: User,
+    friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        await FriendService.delete_friend_request(
+            friend_request_id=friend_request_in_db.id,
+            request_user=other_user_in_db,
+            session=session,
+        )
+    result = (await session.exec(select(FriendRequest))).all()
+    assert len(result) == 1

@@ -67,7 +67,7 @@ class UserService:
 
 class FriendService:
     @classmethod
-    async def _find_friend(
+    async def _find_friends(
         cls, user_id: UUID, friend_user_id: UUID, session: AsyncSession
     ) -> list[Union[Friend, None]]:
         friends = (
@@ -154,12 +154,12 @@ class FriendService:
         if friend.user != request_user:
             raise PermissionDeniedException("Not authorized.")
 
-        friendship = await cls._find_friend(
+        friends = await cls._find_friends(
             user_id=friend.user_id,
             friend_user_id=friend.friend_user_id,
             session=session,
         )
-        for friend in friendship:
+        for friend in friends:
             await session.delete(friend)
         await session.commit()
         return
@@ -196,7 +196,7 @@ class FriendService:
         request_user: User,
         session: AsyncSession,
     ):
-        friends = await cls._find_friend(
+        friends = await cls._find_friends(
             user_id=request_user.id, friend_user_id=user_id, session=session
         )
         if friends != []:
@@ -234,7 +234,14 @@ class FriendService:
         request_user: User,
         session: AsyncSession,
     ) -> FriendRequest:
-        ...
+        sent_request = await cls.filter_sent_friend_request_by_id(
+            friend_request_id=friend_request_id,
+            request_user=request_user,
+            session=session,
+        )
+        await session.delete(sent_request)
+        await session.commit()
+        return
 
     @classmethod
     async def filter_received_friend_requests(
