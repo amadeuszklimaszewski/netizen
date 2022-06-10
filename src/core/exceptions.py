@@ -14,6 +14,10 @@ class InvalidTableException(APIException):
     pass
 
 
+class FriendRequestAlreadyHandled(APIException):
+    pass
+
+
 class GroupRequestAlreadyHandled(APIException):
     pass
 

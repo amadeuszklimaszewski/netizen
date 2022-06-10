@@ -1,7 +1,6 @@
 from typing import Union
-from sqlalchemy import and_, or_
 from uuid import UUID
-from sqlmodel import select
+from sqlmodel import select, and_, or_, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.users.models import (
@@ -15,6 +14,7 @@ from src.apps.users.utils import pwd_context
 from src.core.exceptions import (
     AlreadyExistsException,
     DoesNotExistException,
+    FriendRequestAlreadyHandled,
     InvalidCredentialsException,
     PermissionDeniedException,
 )
@@ -225,7 +225,27 @@ class FriendService:
         request_user: User,
         session: AsyncSession,
     ):
-        ...
+        received_request = await cls.filter_received_friend_request_by_id(
+            friend_request_id=friend_request_id,
+            request_user=request_user,
+            session=session,
+        )
+        if received_request.status != "PENDING":
+            raise FriendRequestAlreadyHandled("Friend request was already handled.")
+        update_data = schema.dict()
+        await session.exec(
+            update(FriendRequest)
+            .where(FriendRequest.id == received_request.id)
+            .values(**update_data)
+        )
+        await session.refresh(received_request)
+        if received_request.status == "ACCEPTED":
+            await cls.create_friend(
+                user_id=request_user.id,
+                friend_id=received_request.from_user_id,
+                session=session,
+            )
+        return received_request
 
     @classmethod
     async def delete_friend_request(

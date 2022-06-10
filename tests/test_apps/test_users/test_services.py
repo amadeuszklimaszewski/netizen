@@ -11,6 +11,7 @@ from src.apps.users.models import User
 from src.core.exceptions import (
     AlreadyExistsException,
     DoesNotExistException,
+    FriendRequestAlreadyHandled,
     PermissionDeniedException,
 )
 
@@ -407,3 +408,122 @@ async def test_delete_friend_request_raises_exception_with_invalid_user(
         )
     result = (await session.exec(select(FriendRequest))).all()
     assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_friend_service_correctly_updates_friend_request(
+    user_in_db: User,
+    other_user_in_db: User,
+    received_friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    update_data = {"status": "DENIED"}
+    update_schema = FriendRequestUpdateSchema(**update_data)
+    friend_request = await FriendService.update_friend_request(
+        schema=update_schema,
+        friend_request_id=received_friend_request_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert friend_request.status == update_data["status"]
+    result = (await session.exec(select(Friend))).all()
+    assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_update_friend_request_create_friends_on_accepted_request(
+    user_in_db: User,
+    other_user_in_db: User,
+    received_friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    update_data = {"status": "ACCEPTED"}
+    update_schema = FriendRequestUpdateSchema(**update_data)
+    friend_request = await FriendService.update_friend_request(
+        schema=update_schema,
+        friend_request_id=received_friend_request_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert friend_request.status == update_data["status"]
+
+    result = (await session.exec(select(Friend))).all()
+    assert len(result) == 2
+
+
+@pytest.mark.asyncio
+async def test_update_friend_request_raises_exception_on_invalid_user(
+    user_in_db: User,
+    other_user_in_db: User,
+    received_friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    update_data = {"status": "ACCEPTED"}
+    update_schema = FriendRequestUpdateSchema(**update_data)
+    with pytest.raises(DoesNotExistException):
+        friend_request = await FriendService.update_friend_request(
+            schema=update_schema,
+            friend_request_id=received_friend_request_in_db.id,
+            request_user=other_user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_friend_request_raises_exception_on_invalid_request_id(
+    user_in_db: User,
+    other_user_in_db: User,
+    received_friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    update_data = {"status": "ACCEPTED"}
+    update_schema = FriendRequestUpdateSchema(**update_data)
+    with pytest.raises(DoesNotExistException):
+        friend_request = await FriendService.update_friend_request(
+            schema=update_schema,
+            friend_request_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_friend_request_raises_exception_on_sent_request(
+    user_in_db: User,
+    other_user_in_db: User,
+    friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    update_data = {"status": "ACCEPTED"}
+    update_schema = FriendRequestUpdateSchema(**update_data)
+    with pytest.raises(DoesNotExistException):
+        friend_request = await FriendService.update_friend_request(
+            schema=update_schema,
+            friend_request_id=friend_request_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_friend_request_raises_exception_on_handled_request(
+    user_in_db: User,
+    other_user_in_db: User,
+    received_friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    update_data = {"status": "DENIED"}
+    update_schema = FriendRequestUpdateSchema(**update_data)
+    friend_request = await FriendService.update_friend_request(
+        schema=update_schema,
+        friend_request_id=received_friend_request_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    with pytest.raises(FriendRequestAlreadyHandled):
+        friend_request = await FriendService.update_friend_request(
+            schema=update_schema,
+            friend_request_id=received_friend_request_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )

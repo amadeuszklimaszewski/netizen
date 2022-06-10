@@ -212,3 +212,19 @@ async def test_other_user_cannot_delete_friend_request(
         headers=other_user_bearer_token_header,
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_user_can_update_received_friend_request(
+    client: AsyncClient,
+    user_in_db: User,
+    user_bearer_token_header: dict[str, str],
+    received_friend_request_in_db: FriendRequest,
+):
+    update_data = {"status": "ACCEPTED"}
+    response: Response = await client.put(
+        f"/users/profile/requests/{received_friend_request_in_db.id}/",
+        json=update_data,
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
