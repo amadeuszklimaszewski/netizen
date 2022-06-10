@@ -1,6 +1,4 @@
-from re import U
 from typing import Union
-from pytest import Session
 from sqlalchemy import and_, or_
 from uuid import UUID
 from sqlmodel import select
@@ -230,7 +228,7 @@ class FriendService:
         friend_request_id: UUID,
         request_user: User,
         session: AsyncSession,
-    ):
+    ) -> FriendRequest:
         ...
 
     @classmethod
@@ -238,7 +236,7 @@ class FriendService:
         cls,
         request_user: User,
         session: AsyncSession,
-    ):
+    ) -> list[FriendRequest]:
         received_requests = (
             await session.exec(
                 select(FriendRequest).where(FriendRequest.to_user_id == request_user.id)
@@ -253,14 +251,26 @@ class FriendService:
         request_user: User,
         session: AsyncSession,
     ):
-        ...
+        received_request = (
+            await session.exec(
+                select(FriendRequest).where(
+                    and_(
+                        FriendRequest.id == friend_request_id,
+                        FriendRequest.to_user_id == request_user.id,
+                    )
+                )
+            )
+        ).first()
+        if received_request is None:
+            raise DoesNotExistException("Friend with given id does not exist.")
+        return received_request
 
     @classmethod
     async def filter_sent_friend_requests(
         cls,
         request_user: User,
         session: AsyncSession,
-    ):
+    ) -> list[FriendRequest]:
         sent_requests = (
             await session.exec(
                 select(FriendRequest).where(
@@ -276,5 +286,5 @@ class FriendService:
         friend_request_id: UUID,
         request_user: User,
         session: AsyncSession,
-    ):
+    ) -> FriendRequest:
         ...

@@ -113,3 +113,25 @@ async def test_user_can_get_sent_friend_requests_list(
     assert response_body[0]["from_user_id"] == str(friend_request_in_db.from_user_id)
     assert response_body[0]["to_user_id"] == str(friend_request_in_db.to_user_id)
     assert response_body[0]["status"] == friend_request_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_user_can_get_received_friend_request_by_id(
+    client: AsyncClient,
+    user_in_db: User,
+    user_bearer_token_header: dict[str, str],
+    other_user_in_db: User,
+    received_friend_request_in_db: FriendRequest,
+):
+    response: Response = await client.get(
+        f"/users/profile/requests/{received_friend_request_in_db.id}/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_body = response.json()
+    assert response_body["to_user_id"] == str(received_friend_request_in_db.to_user_id)
+    assert response_body["from_user_id"] == str(
+        received_friend_request_in_db.from_user_id
+    )
+    assert response_body["status"] == received_friend_request_in_db.status

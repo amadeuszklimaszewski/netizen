@@ -1,3 +1,4 @@
+from re import A
 from uuid import uuid4
 import pytest
 from sqlalchemy import and_
@@ -144,7 +145,7 @@ async def test_friend_service_correctly_filters_friend_by_id(
 
 
 @pytest.mark.asyncio
-async def test__filter_friend_by_id_raises_exception_with_invalid_friend_id(
+async def test_filter_friend_by_id_raises_exception_with_invalid_friend_id(
     user_in_db: User,
     other_user_in_db: User,
     friends_in_db: tuple[Friend],
@@ -186,3 +187,54 @@ async def test_friend_service_correctly_filters_sent_friend_request_list(
     )
     assert friends[0].to_user_id == other_user_in_db.id
     assert friends[0].from_user_id == user_in_db.id
+
+
+@pytest.mark.asyncio
+async def test_friend_service_correctly_filters_received_friend_request_by_id(
+    user_in_db: User,
+    other_user_in_db: User,
+    friends_in_db: tuple[Friend],
+    received_friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    friend_request = await FriendService.filter_received_friend_request_by_id(
+        friend_request_id=received_friend_request_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert friend_request.id == received_friend_request_in_db.id
+    assert friend_request.to_user_id == received_friend_request_in_db.to_user_id
+    assert friend_request.from_user_id == received_friend_request_in_db.from_user_id
+    assert friend_request.status == received_friend_request_in_db.status
+
+
+@pytest.mark.asyncio
+async def test_filter_received_friend_request_by_id_raises_does_not_exist_with_sent_request(
+    user_in_db: User,
+    other_user_in_db: User,
+    friends_in_db: tuple[Friend],
+    friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        friend_request = await FriendService.filter_received_friend_request_by_id(
+            friend_request_id=friend_request_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_filter_received_friend_request_by_id_raises_does_not_exist_with_wrong_id(
+    user_in_db: User,
+    other_user_in_db: User,
+    friends_in_db: tuple[Friend],
+    friend_request_in_db: FriendRequest,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        friend_request = await FriendService.filter_received_friend_request_by_id(
+            friend_request_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )
