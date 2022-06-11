@@ -17,9 +17,10 @@ from src.apps.groups.models import (
     GroupRequestUpdateSchema,
 )
 from src.apps.groups.services import GroupService
-
+from src.apps.posts.routers import group_post_router
 
 group_router = APIRouter(prefix="/groups")
+group_router.include_router(group_post_router)
 
 
 @group_router.get(

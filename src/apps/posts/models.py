@@ -85,7 +85,7 @@ class GroupPostReaction(TimeStampedUUIDModelBase, table=True):
     reaction: ReactionEnum = Field(sa_column=Column(Enum(ReactionEnum), index=False))
 
 
-class ReactionOutputSchema(TimeStampedUUIDModelBase):
+class PostReactionOutputSchema(TimeStampedUUIDModelBase):
     text: str
     reaction: ReactionEnum
     post_id: UUID

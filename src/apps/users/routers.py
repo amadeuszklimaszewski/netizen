@@ -22,7 +22,10 @@ from src.core.utils import get_object_by_id
 from src.database.connection import get_db
 from src.dependencies.users import authenticate_user
 
+from src.apps.posts.routers import user_post_router
+
 user_router = APIRouter(prefix="/users")
+user_router.include_router(user_post_router)
 
 
 @user_router.post(
