@@ -27,6 +27,7 @@ class UserPostService:
 
     @classmethod
     async def filter_get_user_posts(
+        cls,
         user_id: UUID,
         session: AsyncSession,
     ) -> list[UserPost]:
@@ -36,24 +37,28 @@ class UserPostService:
 
     @classmethod
     async def filter_get_user_post_by_id(
+        cls,
         session: AsyncSession,
     ) -> UserPost:
         ...
 
     @classmethod
     async def create_user_post(
+        cls,
         session: AsyncSession,
     ) -> UserPost:
         ...
 
     @classmethod
     async def update_user_post(
+        cls,
         session: AsyncSession,
     ) -> UserPost:
         ...
 
     @classmethod
     async def delete_user_post(
+        cls,
         session: AsyncSession,
     ) -> None:
         ...
@@ -62,30 +67,35 @@ class UserPostService:
 
     @classmethod
     async def filter_get_user_post_comments(
+        cls,
         session: AsyncSession,
     ) -> list[UserPostComment]:
         ...
 
     @classmethod
     async def filter_get_user_post_comment_by_id(
+        cls,
         session: AsyncSession,
     ) -> UserPostComment:
         ...
 
     @classmethod
     async def create_user_post_comment(
+        cls,
         session: AsyncSession,
     ) -> UserPostComment:
         ...
 
     @classmethod
     async def update_user_post_comment(
+        cls,
         session: AsyncSession,
     ) -> UserPostComment:
         ...
 
     @classmethod
     async def delete_user_post_comment(
+        cls,
         session: AsyncSession,
     ) -> None:
         ...
@@ -94,30 +104,35 @@ class UserPostService:
 
     @classmethod
     async def filter_get_user_post_reactions(
+        cls,
         session: AsyncSession,
     ) -> list[UserPostReaction]:
         ...
 
     @classmethod
     async def filter_get_user_post_reaction_by_id(
+        cls,
         session: AsyncSession,
     ) -> UserPostReaction:
         ...
 
     @classmethod
     async def create_user_post_reaction(
+        cls,
         session: AsyncSession,
     ) -> UserPostReaction:
         ...
 
     @classmethod
     async def update_user_post_reaction(
+        cls,
         session: AsyncSession,
     ) -> UserPostReaction:
         ...
 
     @classmethod
     async def delete_user_post_reaction(
+        cls,
         session: AsyncSession,
     ) -> None:
         ...
@@ -129,30 +144,35 @@ class GroupPostService:
 
     @classmethod
     async def filter_get_group_posts(
+        cls,
         session: AsyncSession,
     ) -> list[GroupPost]:
         ...
 
     @classmethod
     async def filter_get_group_post_by_id(
+        cls,
         session: AsyncSession,
     ) -> GroupPost:
         ...
 
     @classmethod
     async def create_group_post(
+        cls,
         session: AsyncSession,
     ) -> GroupPost:
         ...
 
     @classmethod
     async def update_group_post(
+        cls,
         session: AsyncSession,
     ) -> GroupPost:
         ...
 
     @classmethod
     async def delete_group_post(
+        cls,
         session: AsyncSession,
     ) -> None:
         ...
@@ -161,30 +181,35 @@ class GroupPostService:
 
     @classmethod
     async def filter_get_group_post_comments(
+        cls,
         session: AsyncSession,
     ) -> list[GroupPostComment]:
         ...
 
     @classmethod
     async def filter_get_group_post_comment_by_id(
+        cls,
         session: AsyncSession,
     ) -> GroupPostComment:
         ...
 
     @classmethod
     async def create_group_post_comment(
+        cls,
         session: AsyncSession,
     ) -> GroupPostComment:
         ...
 
     @classmethod
     async def update_group_post_comment(
+        cls,
         session: AsyncSession,
     ) -> GroupPostComment:
         ...
 
     @classmethod
     async def delete_group_post_comment(
+        cls,
         session: AsyncSession,
     ) -> None:
         ...
@@ -193,30 +218,35 @@ class GroupPostService:
 
     @classmethod
     async def filter_get_group_post_reactions(
+        cls,
         session: AsyncSession,
     ) -> list[GroupPostReaction]:
         ...
 
     @classmethod
     async def filter_get_group_post_reaction_by_id(
+        cls,
         session: AsyncSession,
     ) -> GroupPostReaction:
         ...
 
     @classmethod
     async def create_group_post_reaction(
+        cls,
         session: AsyncSession,
     ) -> GroupPostReaction:
         ...
 
     @classmethod
     async def update_group_post_reaction(
+        cls,
         session: AsyncSession,
     ) -> GroupPostReaction:
         ...
 
     @classmethod
     async def delete_group_post_reaction(
+        cls,
         session: AsyncSession,
     ) -> None:
         ...
