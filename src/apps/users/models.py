@@ -3,7 +3,7 @@ from uuid import UUID
 from dateutil.relativedelta import relativedelta
 from typing import Any, TYPE_CHECKING, Optional
 from pydantic import validator, validate_email as validate_email_pd
-from sqlmodel import Relationship, SQLModel, Field, Column, String
+from sqlmodel import Relationship, SQLModel, Field, Column, String, Enum
 from sqlalchemy.orm import relationship
 from src.apps.users.enums import FriendRequestStatus
 from src.core.models import TimeStampedUUIDModelBase
@@ -117,7 +117,11 @@ class FriendOutputSchema(TimeStampedUUIDModelBase):
 class FriendRequest(TimeStampedUUIDModelBase, table=True):
     from_user_id: UUID = Field(foreign_key="user.id")
     to_user_id: UUID = Field(foreign_key="user.id")
-    status: FriendRequestStatus
+    status: FriendRequestStatus = Field(
+        sa_column=Column(
+            Enum(FriendRequestStatus), default=None, nullable=True, index=False
+        )
+    )
 
     sender_user: Optional["User"] = Relationship(
         sa_relationship=relationship(
