@@ -4,6 +4,7 @@ from typing import Union
 from fastapi import Depends, status
 from fastapi.routing import APIRouter
 from sqlmodel.ext.asyncio.session import AsyncSession
+from src.apps.posts.services import UserPostService
 
 from src.database.connection import get_db
 from src.apps.users.models import User
@@ -28,9 +29,15 @@ user_post_router = APIRouter()
 )
 async def get_user_posts(
     user_id: UUID,
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    return [
+        PostOutputSchema.from_orm(group_request)
+        for group_request in (
+            await post_service.filter_get_user_posts(user_id=user_id, session=session)
+        )
+    ]
 
 
 @user_post_router.post(
@@ -42,6 +49,7 @@ async def get_user_posts(
 async def create_user_post(
     user_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -54,6 +62,7 @@ async def create_user_post(
     response_model=PostOutputSchema,
 )
 async def get_user_post_by_id(
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -69,6 +78,7 @@ async def update_user_post(
     user_id: UUID,
     post_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -83,6 +93,7 @@ async def delete_user_post(
     user_id: UUID,
     post_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -95,6 +106,7 @@ async def delete_user_post(
     response_model=list[CommentOutputSchema],
 )
 async def get_user_post_comment_list(
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -108,6 +120,7 @@ async def get_user_post_comment_list(
 )
 async def create_user_post_comment(
     request_user: User = Depends(authenticate_user),
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -123,6 +136,7 @@ async def get_user_post_comment_by_id(
     user_id: UUID,
     post_id: UUID,
     comment_id: UUID,
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -138,6 +152,7 @@ async def update_user_post_comment(
     user_id: UUID,
     post_id: UUID,
     comment_id: UUID,
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -152,6 +167,7 @@ async def delete_user_post_comment(
     user_id: UUID,
     post_id: UUID,
     comment_id: UUID,
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -166,6 +182,7 @@ async def delete_user_post_comment(
 async def get_user_post_reaction_list(
     user_id: UUID,
     post_id: UUID,
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -181,6 +198,7 @@ async def create_user_post_reaction(
     user_id: UUID,
     post_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -196,6 +214,7 @@ async def get_user_post_reaction_by_id(
     user_id: UUID,
     post_id: UUID,
     reaction_id: UUID,
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -212,6 +231,7 @@ async def update_user_post_reaction(
     post_id: UUID,
     reaction_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
@@ -227,6 +247,7 @@ async def delete_user_post_reaction(
     post_id: UUID,
     reaction_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     ...
