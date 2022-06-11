@@ -70,7 +70,7 @@ class CommentOutputSchema(TimeStampedUUIDModelBase):
 # --- --- Reactions --- ---
 
 
-class UserPostReaction(TimeStampedUUIDModelBase):
+class UserPostReaction(TimeStampedUUIDModelBase, table=True):
     post_id: UUID = Field(foreign_key="userpost.id")
     user_id: UUID = Field(foreign_key="user.id")
     reaction: ReactionEnum = Field(sa_column=Column(Enum(ReactionEnum), index=False))
@@ -79,7 +79,7 @@ class UserPostReaction(TimeStampedUUIDModelBase):
     # user: Optional["User"] = Relationship(sa_relationship=relationship("User"))
 
 
-class GroupPostReaction(TimeStampedUUIDModelBase):
+class GroupPostReaction(TimeStampedUUIDModelBase, table=True):
     post_id: UUID = Field(foreign_key="grouppost.id")
     user_id: UUID = Field(foreign_key="user.id")
     reaction: ReactionEnum = Field(sa_column=Column(Enum(ReactionEnum), index=False))
