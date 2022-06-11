@@ -1,9 +1,8 @@
 from fastapi import status
-from httpx import AsyncClient, Response, head
+from httpx import AsyncClient, Response
 import pytest
 
 from src.apps.users.models import User, Friend, FriendRequest
-from tests.test_apps.conftest import friends_in_db
 
 
 @pytest.mark.asyncio

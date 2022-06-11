@@ -27,9 +27,12 @@ class UserPostService:
 
     @classmethod
     async def filter_get_user_posts(
+        user_id: UUID,
         session: AsyncSession,
     ) -> list[UserPost]:
-        ...
+        return (
+            await session.exec(select(UserPost).where(UserPost.user_id == user_id))
+        ).all()
 
     @classmethod
     async def filter_get_user_post_by_id(

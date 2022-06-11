@@ -111,7 +111,10 @@ class GroupService:
 
     @classmethod
     async def _find_membership(
-        cls, group_id: UUID, user_id: UUID, session: AsyncSession
+        cls,
+        group_id: UUID,
+        user_id: UUID,
+        session: AsyncSession,
     ) -> Union[GroupMembership, None]:
         group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
         membership: Union[GroupMembership, None] = (
@@ -128,7 +131,10 @@ class GroupService:
 
     @classmethod
     async def _find_membership_or_raise_exception(
-        cls, group_id: UUID, user_id: UUID, session: AsyncSession
+        cls,
+        group_id: UUID,
+        user_id: UUID,
+        session: AsyncSession,
     ) -> GroupMembership:
         membership = await cls._find_membership(
             group_id=group_id, user_id=user_id, session=session
@@ -174,7 +180,10 @@ class GroupService:
 
     @classmethod
     async def create_group(
-        cls, schema: GroupInputSchema, user: User, session: AsyncSession
+        cls,
+        schema: GroupInputSchema,
+        user: User,
+        session: AsyncSession,
     ) -> Group:
         group_data = schema.dict()
         group = Group(**group_data)
@@ -193,7 +202,11 @@ class GroupService:
 
     @classmethod
     async def update_group(
-        cls, schema: GroupInputSchema, group_id: UUID, user: User, session: AsyncSession
+        cls,
+        schema: GroupInputSchema,
+        group_id: UUID,
+        user: User,
+        session: AsyncSession,
     ) -> Group:
         membership = await cls._find_membership_or_raise_exception(
             group_id=group_id, user_id=user.id, session=session
@@ -208,7 +221,12 @@ class GroupService:
         return group
 
     @classmethod
-    async def delete_group(cls, group_id: UUID, user: User, session: AsyncSession):
+    async def delete_group(
+        cls,
+        group_id: UUID,
+        user: User,
+        session: AsyncSession,
+    ):
         membership = await cls._find_membership_or_raise_exception(
             group_id=group_id, user_id=user.id, session=session
         )
@@ -258,7 +276,10 @@ class GroupService:
 
     @classmethod
     async def create_group_request(
-        cls, group_id: UUID, request_user: User, session: AsyncSession
+        cls,
+        group_id: UUID,
+        request_user: User,
+        session: AsyncSession,
     ) -> GroupRequest:
         group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
 
@@ -314,7 +335,10 @@ class GroupService:
 
     @classmethod
     async def _find_group_request(
-        cls, group_id: UUID, request_id: UUID, session: AsyncSession
+        cls,
+        group_id: UUID,
+        request_id: UUID,
+        session: AsyncSession,
     ) -> GroupRequest:
         group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
         request: Union[GroupRequest, None] = (
@@ -390,7 +414,10 @@ class GroupService:
 
     @classmethod
     async def filter_get_user_group_request_by_id(
-        cls, request_id: UUID, request_user: User, session: AsyncSession
+        cls,
+        request_id: UUID,
+        request_user: User,
+        session: AsyncSession,
     ) -> GroupRequest:
         request = await get_object_by_id(
             Table=GroupRequest, id=request_id, session=session
@@ -401,7 +428,10 @@ class GroupService:
 
     @classmethod
     async def delete_user_group_request(
-        cls, request_id: UUID, request_user: User, session: AsyncSession
+        cls,
+        request_id: UUID,
+        request_user: User,
+        session: AsyncSession,
     ):
         request = await cls.filter_get_user_group_request_by_id(
             request_id=request_id, request_user=request_user, session=session

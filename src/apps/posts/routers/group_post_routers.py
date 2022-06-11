@@ -27,7 +27,6 @@ group_post_router = APIRouter()
 )
 async def get_user_posts(
     group_id: UUID,
-    post_service: ...,
     session: AsyncSession = Depends(get_db),
 ):
     ...
