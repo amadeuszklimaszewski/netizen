@@ -6,6 +6,7 @@ from src.apps.posts.models import (
     GroupPost,
     GroupPostComment,
     GroupPostReaction,
+    PostInputSchema,
     UserPost,
     UserPostComment,
     UserPostReaction,
@@ -45,9 +46,23 @@ class UserPostService:
     @classmethod
     async def create_user_post(
         cls,
+        schema: PostInputSchema,
+        user_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> UserPost:
-        ...
+        user = await get_object_by_id(Table=User, id=user_id, session=session)
+        if request_user.id != user.id:
+            raise PermissionDeniedException("User unauthorized.")
+
+        user_post_data = schema.dict()
+        user_post = UserPost(**user_post_data, user_id=user_id)
+
+        session.add(user_post)
+
+        await session.commit()
+        await session.refresh(user_post)
+        return user_post
 
     @classmethod
     async def update_user_post(

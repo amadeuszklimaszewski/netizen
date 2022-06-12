@@ -31,10 +31,10 @@ async def get_user_posts(
     user_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> list[PostOutputSchema]:
     return [
-        PostOutputSchema.from_orm(group_request)
-        for group_request in (
+        PostOutputSchema.from_orm(user_post)
+        for user_post in (
             await post_service.filter_get_user_posts(user_id=user_id, session=session)
         )
     ]
@@ -47,12 +47,16 @@ async def get_user_posts(
     response_model=PostOutputSchema,
 )
 async def create_user_post(
+    schema: PostInputSchema,
     user_id: UUID,
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
-    ...
+) -> PostOutputSchema:
+    user_post = await post_service.create_user_post(
+        schema=schema, user_id=user_id, request_user=request_user, session=session
+    )
+    return PostOutputSchema.from_orm(user_post)
 
 
 @user_post_router.get(
@@ -64,7 +68,7 @@ async def create_user_post(
 async def get_user_post_by_id(
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> PostOutputSchema:
     ...
 
 
@@ -80,7 +84,7 @@ async def update_user_post(
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> PostOutputSchema:
     ...
 
 
@@ -95,7 +99,7 @@ async def delete_user_post(
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     ...
 
 
