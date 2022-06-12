@@ -27,7 +27,7 @@ user_post_router = APIRouter()
     status_code=status.HTTP_200_OK,
     response_model=list[PostOutputSchema],
 )
-async def get_user_posts(
+async def get_user_post_list(
     user_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
@@ -35,7 +35,9 @@ async def get_user_posts(
     return [
         PostOutputSchema.from_orm(user_post)
         for user_post in (
-            await post_service.filter_get_user_posts(user_id=user_id, session=session)
+            await post_service.filter_get_user_post_list(
+                user_id=user_id, session=session
+            )
         )
     ]
 
@@ -66,10 +68,15 @@ async def create_user_post(
     response_model=PostOutputSchema,
 )
 async def get_user_post_by_id(
+    user_id: UUID,
+    post_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> PostOutputSchema:
-    ...
+    user_post = await post_service.filter_get_user_post_by_id(
+        user_id=user_id, post_id=post_id, session=session
+    )
+    return PostOutputSchema.from_orm(user_post)
 
 
 @user_post_router.put(

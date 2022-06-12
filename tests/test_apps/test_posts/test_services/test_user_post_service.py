@@ -17,7 +17,7 @@ async def test_user_post_service_correctly_filters_post_list(
     user_post_in_db: UserPost,
     session: AsyncSession,
 ):
-    posts = await UserPostService.filter_get_user_posts(
+    posts = await UserPostService.filter_get_user_post_list(
         user_id=user_in_db.id, session=session
     )
     assert len(posts) == 1
@@ -77,4 +77,41 @@ async def test_create_user_post_raises_exception_with_invalid_request_user(
             user_id=user_in_db.id,
             request_user=other_user_in_db,
             session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_user_post_service_correctly_filters_user_post_by_id(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    session: AsyncSession,
+):
+    post = await UserPostService.filter_get_user_post_by_id(
+        user_id=user_in_db.id, post_id=user_post_in_db.id, session=session
+    )
+    assert post.user_id == user_in_db.id
+    assert post.text == user_post_in_db.text
+
+
+@pytest.mark.asyncio
+async def test_filter_user_post_by_id_raises_exception_with_wrong_user_id(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        post = await UserPostService.filter_get_user_post_by_id(
+            user_id=uuid4(), post_id=user_post_in_db.id, session=session
+        )
+
+
+@pytest.mark.asyncio
+async def test_filter_user_post_by_id_raises_exception_with_wrong_post_id(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        post = await UserPostService.filter_get_user_post_by_id(
+            user_id=user_in_db.id, post_id=uuid4(), session=session
         )

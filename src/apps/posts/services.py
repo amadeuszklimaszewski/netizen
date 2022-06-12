@@ -27,7 +27,7 @@ class UserPostService:
     # --- --- Posts --- ---
 
     @classmethod
-    async def filter_get_user_posts(
+    async def filter_get_user_post_list(
         cls,
         user_id: UUID,
         session: AsyncSession,
@@ -39,9 +39,24 @@ class UserPostService:
     @classmethod
     async def filter_get_user_post_by_id(
         cls,
+        user_id: UUID,
+        post_id: UUID,
         session: AsyncSession,
     ) -> UserPost:
-        ...
+        user = await get_object_by_id(Table=User, id=user_id, session=session)
+        user_post = (
+            await session.exec(
+                select(UserPost).where(
+                    and_(
+                        UserPost.user_id == user_id,
+                        UserPost.id == post_id,
+                    )
+                )
+            )
+        ).first()
+        if user_post is None:
+            raise DoesNotExistException("User post with given id does not exist.")
+        return user_post
 
     @classmethod
     async def create_user_post(
@@ -81,7 +96,7 @@ class UserPostService:
     # --- --- Comments --- ---
 
     @classmethod
-    async def filter_get_user_post_comments(
+    async def filter_get_user_post_comment_list(
         cls,
         session: AsyncSession,
     ) -> list[UserPostComment]:
