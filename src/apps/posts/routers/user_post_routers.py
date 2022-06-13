@@ -15,6 +15,7 @@ from src.apps.posts.models import (
     CommentInputSchema,
     CommentOutputSchema,
     PostReactionOutputSchema,
+    UserPostComment,
 )
 
 
@@ -114,7 +115,7 @@ async def delete_user_post(
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     await post_service.delete_user_post(
         user_id=user_id, post_id=post_id, request_user=request_user, session=session
     )
@@ -130,7 +131,7 @@ async def delete_user_post(
 async def get_user_post_comment_list(
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> list[UserPostComment]:
     ...
 
 
@@ -144,7 +145,7 @@ async def create_user_post_comment(
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> UserPostComment:
     ...
 
 
@@ -160,7 +161,7 @@ async def get_user_post_comment_by_id(
     comment_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> UserPostComment:
     ...
 
 
@@ -176,7 +177,7 @@ async def update_user_post_comment(
     comment_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> UserPostComment:
     ...
 
 
@@ -191,7 +192,7 @@ async def delete_user_post_comment(
     comment_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     ...
 
 
