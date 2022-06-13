@@ -9,14 +9,14 @@ from src.apps.posts.services import UserPostService
 
 from src.database.connection import get_db
 from src.apps.users.models import User
-from src.dependencies.users import authenticate_user, get_user_or_none
+from src.dependencies.users import authenticate_user
 from src.apps.posts.models import (
     PostInputSchema,
     PostOutputSchema,
     CommentInputSchema,
     CommentOutputSchema,
-    PostReactionOutputSchema,
-    UserPostComment,
+    ReactionInputSchema,
+    ReactionOutputSchema,
 )
 
 
@@ -241,7 +241,7 @@ async def delete_user_post_comment(
     "/{user_id}/posts/{post_id}/reactions/",
     tags=["user-post-reactions"],
     status_code=status.HTTP_200_OK,
-    response_model=list[CommentOutputSchema],
+    response_model=list[ReactionOutputSchema],
 )
 async def get_user_post_reaction_list(
     user_id: UUID,
@@ -249,30 +249,45 @@ async def get_user_post_reaction_list(
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    return [
+        ReactionOutputSchema.from_orm(user_post_reaction)
+        for user_post_reaction in (
+            await post_service.filter_get_user_post_reaction_list(
+                user_id=user_id, post_id=post_id, session=session
+            )
+        )
+    ]
 
 
 @user_post_router.post(
     "/{user_id}/posts/{post_id}/reactions/",
     tags=["user-post-reactions"],
     status_code=status.HTTP_201_CREATED,
-    response_model=PostReactionOutputSchema,
+    response_model=ReactionOutputSchema,
 )
 async def create_user_post_reaction(
+    schema: ReactionInputSchema,
     user_id: UUID,
     post_id: UUID,
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    user_post_comment = await post_service.create_user_post_reaction(
+        schema=schema,
+        user_id=user_id,
+        post_id=post_id,
+        request_user=request_user,
+        session=session,
+    )
+    return ReactionOutputSchema.from_orm(user_post_comment)
 
 
 @user_post_router.get(
     "/{user_id}/posts/{post_id}/reactions/{reaction_id}/",
     tags=["user-post-reactions"],
     status_code=status.HTTP_200_OK,
-    response_model=PostReactionOutputSchema,
+    response_model=ReactionOutputSchema,
 )
 async def get_user_post_reaction_by_id(
     user_id: UUID,
@@ -281,16 +296,20 @@ async def get_user_post_reaction_by_id(
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    user_post_reaction = await post_service.filter_get_user_post_reaction_by_id(
+        user_id=user_id, post_id=post_id, reaction_id=reaction_id, session=session
+    )
+    return ReactionOutputSchema.from_orm(user_post_reaction)
 
 
 @user_post_router.put(
     "/{user_id}/posts/{post_id}/reactions/{reaction_id}/",
     tags=["user-post-reactions"],
     status_code=status.HTTP_200_OK,
-    response_model=PostReactionOutputSchema,
+    response_model=ReactionOutputSchema,
 )
 async def update_user_post_reaction(
+    schema: ReactionInputSchema,
     user_id: UUID,
     post_id: UUID,
     reaction_id: UUID,
@@ -298,13 +317,21 @@ async def update_user_post_reaction(
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    user_post_reaction = await post_service.update_user_post_reaction(
+        schema=schema,
+        user_id=user_id,
+        post_id=post_id,
+        reaction_id=reaction_id,
+        request_user=request_user,
+        session=session,
+    )
+    return ReactionOutputSchema.from_orm(user_post_reaction)
 
 
 @user_post_router.delete(
     "/{user_id}/posts/{post_id}/reactions/{reaction_id}/",
     tags=["user-post-reactions"],
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_user_post_reaction(
     user_id: UUID,
@@ -314,4 +341,11 @@ async def delete_user_post_reaction(
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
-    ...
+    await post_service.delete_user_post_reaction(
+        user_id=user_id,
+        post_id=post_id,
+        reaction_id=reaction_id,
+        request_user=request_user,
+        session=session,
+    )
+    return

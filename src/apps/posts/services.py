@@ -8,6 +8,7 @@ from src.apps.posts.models import (
     GroupPostComment,
     GroupPostReaction,
     PostInputSchema,
+    ReactionInputSchema,
     UserPost,
     UserPostComment,
     UserPostReaction,
@@ -225,39 +226,106 @@ class UserPostService:
     # --- --- Reactions --- ---
 
     @classmethod
-    async def filter_get_user_post_reactions(
+    async def filter_get_user_post_reaction_list(
         cls,
+        user_id: UUID,
+        post_id: UUID,
         session: AsyncSession,
     ) -> list[UserPostReaction]:
-        ...
+        await cls.filter_get_user_post_by_id(
+            user_id=user_id, post_id=post_id, session=session
+        )
+        return (
+            await session.exec(
+                select(UserPostReaction).where(UserPostReaction.post_id == post_id)
+            )
+        ).all()
 
     @classmethod
     async def filter_get_user_post_reaction_by_id(
         cls,
+        user_id: UUID,
+        post_id: UUID,
+        reaction_id: UUID,
         session: AsyncSession,
     ) -> UserPostReaction:
-        ...
+        await cls.filter_get_user_post_by_id(
+            user_id=user_id, post_id=post_id, session=session
+        )
+        user_post_reaction = (
+            await session.exec(
+                select(UserPostReaction).where(UserPostReaction.id == reaction_id)
+            )
+        ).first()
+        if user_post_reaction is None:
+            raise DoesNotExistException("Comment with given id does not exist")
+        return user_post_reaction
 
     @classmethod
     async def create_user_post_reaction(
         cls,
+        schema: ReactionInputSchema,
+        user_id: UUID,
+        post_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> UserPostReaction:
-        ...
+        user_post = await cls.filter_get_user_post_by_id(
+            user_id=user_id, post_id=post_id, session=session
+        )
+
+        user_post_reaction_data = schema.dict()
+        user_post_reaction = UserPostReaction(
+            **user_post_reaction_data, user_id=request_user.id, post_id=post_id
+        )
+        session.add(user_post_reaction)
+        await session.commit()
+        await session.refresh(user_post_reaction)
+        return user_post_reaction
 
     @classmethod
     async def update_user_post_reaction(
         cls,
+        schema: ReactionInputSchema,
+        user_id: UUID,
+        post_id: UUID,
+        reaction_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> UserPostReaction:
-        ...
+        user_post_reaction = await cls.filter_get_user_post_reaction_by_id(
+            user_id=user_id, post_id=post_id, reaction_id=reaction_id, session=session
+        )
+        if request_user.id != user_post_reaction.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+
+        user_post_comment_update_data = schema.dict()
+        await session.exec(
+            update(UserPostReaction)
+            .where(UserPostReaction.id == reaction_id)
+            .values(**user_post_comment_update_data)
+        )
+        await session.commit()
+        await session.refresh(user_post_reaction)
+        return user_post_reaction
 
     @classmethod
     async def delete_user_post_reaction(
         cls,
+        user_id: UUID,
+        post_id: UUID,
+        reaction_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> None:
-        ...
+        user_post_reaction = await cls.filter_get_user_post_reaction_by_id(
+            user_id=user_id, post_id=post_id, reaction_id=reaction_id, session=session
+        )
+        if request_user.id != user_post_reaction.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+        await session.delete(user_post_reaction)
+        await session.commit()
+        return
 
 
 class GroupPostService:

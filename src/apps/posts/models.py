@@ -142,12 +142,11 @@ class GroupPostReaction(TimeStampedUUIDModelBase, table=True):
     )
 
 
-class PostReactionInputSchema(SQLModel):
+class ReactionInputSchema(SQLModel):
     reaction: ReactionEnum
 
 
-class PostReactionOutputSchema(TimeStampedUUIDModelBase):
-    text: str
+class ReactionOutputSchema(TimeStampedUUIDModelBase):
     reaction: ReactionEnum
     post_id: UUID
     user_id: UUID

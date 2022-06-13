@@ -1,7 +1,7 @@
 from fastapi import status
 from httpx import AsyncClient, Response
 import pytest
-from src.apps.posts.models import UserPost, UserPostComment
+from src.apps.posts.models import UserPost, UserPostComment, UserPostReaction
 
 from src.apps.users.models import User
 
@@ -355,6 +355,191 @@ async def test_anonymous_user_cannot_delete_user_post_comment(
 ):
     response: Response = await client.delete(
         f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/comments/{user_post_comment_in_db.id}/",
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1
+    assert response_body["detail"] == "Missing Authorization Header"
+
+
+@pytest.mark.asyncio
+async def test_user_can_get_user_post_comment_list(
+    client: AsyncClient,
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_reaction_in_db: UserPostReaction,
+    user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.get(
+        f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/reactions/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+    assert response_body[0]["user_id"] == str(user_post_reaction_in_db.user_id)
+    assert response_body[0]["post_id"] == str(user_post_reaction_in_db.post_id)
+    assert response_body[0]["reaction"] == user_post_reaction_in_db.reaction
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_can_get_user_post_comment_list(
+    client: AsyncClient,
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_reaction_in_db: UserPostReaction,
+):
+    response: Response = await client.get(
+        f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/reactions/",
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+    assert response_body[0]["user_id"] == str(user_post_reaction_in_db.user_id)
+    assert response_body[0]["post_id"] == str(user_post_reaction_in_db.post_id)
+    assert response_body[0]["reaction"] == user_post_reaction_in_db.reaction
+
+
+@pytest.mark.asyncio
+async def test_user_can_get_user_post_comment_by_id(
+    client: AsyncClient,
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_reaction_in_db: UserPostReaction,
+    user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.get(
+        f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/reactions/{user_post_reaction_in_db.id}/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+    assert response_body["user_id"] == str(user_post_reaction_in_db.user_id)
+    assert response_body["post_id"] == str(user_post_reaction_in_db.post_id)
+    assert response_body["reaction"] == user_post_reaction_in_db.reaction
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_can_get_user_post_comment_by_id(
+    client: AsyncClient,
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_reaction_in_db: UserPostReaction,
+):
+    response: Response = await client.get(
+        f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/reactions/{user_post_reaction_in_db.id}/",
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+    assert response_body["user_id"] == str(user_post_reaction_in_db.user_id)
+    assert response_body["post_id"] == str(user_post_reaction_in_db.post_id)
+    assert response_body["reaction"] == user_post_reaction_in_db.reaction
+
+
+@pytest.mark.asyncio
+async def test_user_can_create_user_post_reaction(
+    client: AsyncClient,
+    user_in_db: User,
+    other_user_in_db: User,
+    user_post_in_db: UserPost,
+    reaction_data: dict[str, str],
+    other_user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.post(
+        f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/reactions/",
+        json=reaction_data,
+        headers=other_user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+    response_body = response.json()
+    assert response_body["user_id"] == str(other_user_in_db.id)
+    assert response_body["post_id"] == str(user_post_in_db.id)
+    assert response_body["reaction"] == reaction_data["reaction"]
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_create_user_post_reaction(
+    client: AsyncClient,
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    reaction_data: dict[str, str],
+):
+    response: Response = await client.post(
+        f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/reactions/",
+        json=reaction_data,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1
+    assert response_body["detail"] == "Missing Authorization Header"
+
+
+@pytest.mark.asyncio
+async def test_user_can_update_user_post_reaction(
+    client: AsyncClient,
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_reaction_in_db: UserPostReaction,
+    reaction_update_data: dict[str, str],
+    user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.put(
+        f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/reactions/{user_post_reaction_in_db.id}/",
+        json=reaction_update_data,
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    response_body = response.json()
+    assert response_body["user_id"] == str(user_in_db.id)
+    assert response_body["post_id"] == str(user_post_in_db.id)
+    assert response_body["reaction"] == reaction_update_data["reaction"]
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_update_user_post_reaction(
+    client: AsyncClient,
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    reaction_update_data: dict[str, str],
+    user_post_reaction_in_db: UserPostReaction,
+):
+    response: Response = await client.put(
+        f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/reactions/{user_post_reaction_in_db.id}/",
+        json=reaction_update_data,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1
+    assert response_body["detail"] == "Missing Authorization Header"
+
+
+@pytest.mark.asyncio
+async def test_user_can_delete_user_post_reaction(
+    client: AsyncClient,
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_reaction_in_db: UserPostReaction,
+    user_bearer_token_header: dict[str, str],
+):
+    response: Response = await client.delete(
+        f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/reactions/{user_post_reaction_in_db.id}/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_delete_user_post_reaction(
+    client: AsyncClient,
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_reaction_in_db: UserPostReaction,
+):
+    response: Response = await client.delete(
+        f"/users/{user_in_db.id}/posts/{user_post_in_db.id}/reactions/{user_post_reaction_in_db.id}/",
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 

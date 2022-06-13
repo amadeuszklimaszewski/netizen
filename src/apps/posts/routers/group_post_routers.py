@@ -13,7 +13,8 @@ from src.apps.posts.models import (
     PostOutputSchema,
     CommentInputSchema,
     CommentOutputSchema,
-    PostReactionOutputSchema,
+    ReactionInputSchema,
+    ReactionOutputSchema,
 )
 
 group_post_router = APIRouter()
@@ -180,7 +181,7 @@ async def get_group_post_reaction_list(
     "/{group_id}/posts/{post_id}/reactions/",
     tags=["group-post-reactions"],
     status_code=status.HTTP_201_CREATED,
-    response_model=PostReactionOutputSchema,
+    response_model=list[ReactionOutputSchema],
 )
 async def create_group_post_reaction(
     group_id: UUID,
@@ -195,7 +196,7 @@ async def create_group_post_reaction(
     "/{group_id}/posts/{post_id}/reactions/{reaction_id}/",
     tags=["group-post-reactions"],
     status_code=status.HTTP_200_OK,
-    response_model=PostReactionOutputSchema,
+    response_model=ReactionOutputSchema,
 )
 async def get_group_post_reaction_by_id(
     group_id: UUID,
@@ -210,7 +211,7 @@ async def get_group_post_reaction_by_id(
     "/{group_id}/posts/{post_id}/reactions/{reaction_id}/",
     tags=["group-post-reactions"],
     status_code=status.HTTP_200_OK,
-    response_model=PostReactionOutputSchema,
+    response_model=ReactionOutputSchema,
 )
 async def update_group_post_reaction(
     group_id: UUID,
