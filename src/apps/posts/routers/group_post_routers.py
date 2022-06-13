@@ -3,7 +3,6 @@ from typing import Union
 
 from fastapi import Depends, status
 from fastapi.routing import APIRouter
-from httpcore import request
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.posts.services import GroupPostService
 
@@ -31,7 +30,7 @@ group_post_router = APIRouter()
 )
 async def get_user_posts(
     group_id: UUID,
-    request_user: User = Depends(get_user_or_none),
+    request_user: Union[User, None] = Depends(get_user_or_none),
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> list[GroupPostOutputSchema]:
@@ -73,7 +72,7 @@ async def create_user_post(
 async def get_user_post_by_id(
     group_id: UUID,
     post_id: UUID,
-    request_user: User = Depends(get_user_or_none),
+    request_user: Union[User, None] = Depends(get_user_or_none),
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> GroupPostOutputSchema:
@@ -134,7 +133,7 @@ async def delete_group_post(
 async def get_group_post_comment_list(
     group_id: UUID,
     post_id: UUID,
-    request_user: User = Depends(get_user_or_none),
+    request_user: Union[User, None] = Depends(get_user_or_none),
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> list[CommentOutputSchema]:
@@ -167,7 +166,7 @@ async def get_group_post_comment_by_id(
     group_id: UUID,
     post_id: UUID,
     comment_id: UUID,
-    request_user: User = Depends(get_user_or_none),
+    request_user: Union[User, None] = Depends(get_user_or_none),
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> CommentOutputSchema:
@@ -216,7 +215,7 @@ async def delete_group_post_comment(
 async def get_group_post_reaction_list(
     group_id: UUID,
     post_id: UUID,
-    request_user: User = Depends(get_user_or_none),
+    request_user: Union[User, None] = Depends(get_user_or_none),
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> list[ReactionOutputSchema]:
@@ -249,7 +248,7 @@ async def get_group_post_reaction_by_id(
     group_id: UUID,
     post_id: UUID,
     reaction_id: UUID,
-    request_user: User = Depends(get_user_or_none),
+    request_user: Union[User, None] = Depends(get_user_or_none),
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> ReactionOutputSchema:
