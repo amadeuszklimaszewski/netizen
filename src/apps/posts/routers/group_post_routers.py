@@ -61,6 +61,7 @@ async def create_user_post(
     group_post = await post_service.create_group_post(
         schema=schema, group_id=group_id, request_user=request_user, session=session
     )
+    return GroupPostOutputSchema.from_orm(group_post)
 
 
 @group_post_router.get(

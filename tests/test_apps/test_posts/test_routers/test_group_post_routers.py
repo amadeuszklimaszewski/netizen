@@ -102,3 +102,83 @@ async def test_anonymous_user_cannot_get_closed_group_post_by_id(
         f"/groups/{closed_group_in_db.id}/posts/{group_post_in_db.id}/",
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.asyncio
+async def test_user_can_create_user_post(
+    client: AsyncClient,
+    post_data: dict[str, str],
+    user_in_db: User,
+    public_group_in_db: Group,
+    user_bearer_token_header: dict[str, str],
+):
+
+    response: Response = await client.post(
+        f"/groups/{public_group_in_db.id}/posts/",
+        json=post_data,
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_body = response.json()
+    assert response_body["group_id"] == str(public_group_in_db.id)
+    assert response_body["user_id"] == str(user_in_db.id)
+    assert response_body["text"] == post_data["text"]
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_create_user_post(
+    client: AsyncClient,
+    post_data: dict[str, str],
+    public_group_in_db: Group,
+):
+
+    response: Response = await client.post(
+        f"/groups/{public_group_in_db.id}/posts/",
+        json=post_data,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1
+    assert response_body["detail"] == "Missing Authorization Header"
+
+
+@pytest.mark.asyncio
+async def test_user_can_update_user_post(
+    client: AsyncClient,
+    post_update_data: dict[str, str],
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    user_bearer_token_header: dict[str, str],
+):
+
+    response: Response = await client.put(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/",
+        json=post_update_data,
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    response_body = response.json()
+    assert response_body["group_id"] == str(public_group_in_db.id)
+    assert response_body["user_id"] == str(user_in_db.id)
+    assert response_body["text"] == post_update_data["text"]
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_update_user_post(
+    client: AsyncClient,
+    post_update_data: dict[str, str],
+    group_post_in_db: GroupPost,
+    public_group_in_db: Group,
+):
+
+    response: Response = await client.put(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/",
+        json=post_update_data,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1
+    assert response_body["detail"] == "Missing Authorization Header"

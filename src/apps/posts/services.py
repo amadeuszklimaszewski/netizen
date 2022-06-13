@@ -203,7 +203,6 @@ class UserPostService:
             .where(UserPostComment.id == comment_id)
             .values(**user_post_comment_update_data)
         )
-        await session.commit()
         await session.refresh(user_post_comment)
         return user_post_comment
 
@@ -307,7 +306,6 @@ class UserPostService:
             .where(UserPostReaction.id == reaction_id)
             .values(**user_post_comment_update_data)
         )
-        await session.commit()
         await session.refresh(user_post_reaction)
         return user_post_reaction
 
@@ -434,7 +432,17 @@ class GroupPostService:
         request_user: User,
         session: AsyncSession,
     ) -> GroupPost:
-        ...
+        await cls._validate_user_access_on_post_put_delete(
+            group_id=group_id, request_user=request_user, session=session
+        )
+        group_post_data = schema.dict()
+        group_post = GroupPost(
+            **group_post_data, user_id=request_user.id, group_id=group_id
+        )
+        session.add(group_post)
+        await session.commit()
+        await session.refresh(group_post)
+        return group_post
 
     @classmethod
     async def update_group_post(
@@ -445,7 +453,26 @@ class GroupPostService:
         request_user: User,
         session: AsyncSession,
     ) -> GroupPost:
-        ...
+        await cls._validate_user_access_on_post_put_delete(
+            group_id=group_id, request_user=request_user, session=session
+        )
+        group_post = await cls.filter_get_group_post_by_id(
+            group_id=group_id,
+            post_id=post_id,
+            request_user=request_user,
+            session=session,
+        )
+        if request_user.id != group_post.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+
+        group_post_update_data = schema.dict()
+        await session.exec(
+            update(GroupPost)
+            .where(GroupPost.id == post_id)
+            .values(**group_post_update_data)
+        )
+        await session.refresh(group_post)
+        return group_post
 
     @classmethod
     async def delete_group_post(
@@ -455,7 +482,21 @@ class GroupPostService:
         request_user: User,
         session: AsyncSession,
     ) -> None:
-        ...
+        await cls._validate_user_access_on_post_put_delete(
+            group_id=group_id, request_user=request_user, session=session
+        )
+        group_post = await cls.filter_get_group_post_by_id(
+            group_id=group_id,
+            post_id=post_id,
+            request_user=request_user,
+            session=session,
+        )
+        if request_user.id != group_post.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+
+        await session.delete(group_post)
+        await session.commit()
+        return
 
     # --- --- Comments --- ---
 
