@@ -86,13 +86,21 @@ async def get_user_post_by_id(
     response_model=PostOutputSchema,
 )
 async def update_user_post(
+    schema: PostInputSchema,
     user_id: UUID,
     post_id: UUID,
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> PostOutputSchema:
-    ...
+    user_post = await post_service.update_user_post(
+        schema=schema,
+        user_id=user_id,
+        post_id=post_id,
+        request_user=request_user,
+        session=session,
+    )
+    return PostOutputSchema.from_orm(user_post)
 
 
 @user_post_router.delete(
@@ -106,8 +114,11 @@ async def delete_user_post(
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-) -> None:
-    ...
+):
+    await post_service.delete_user_post(
+        user_id=user_id, post_id=post_id, request_user=request_user, session=session
+    )
+    return
 
 
 @user_post_router.get(

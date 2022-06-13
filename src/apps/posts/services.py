@@ -82,16 +82,40 @@ class UserPostService:
     @classmethod
     async def update_user_post(
         cls,
+        schema: PostInputSchema,
+        user_id: UUID,
+        post_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> UserPost:
-        ...
+        user_post = await cls.filter_get_user_post_by_id(
+            user_id=user_id, post_id=post_id, session=session
+        )
+        if request_user.id != user_post.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+        update_data = schema.dict()
+        await session.exec(
+            update(UserPost).where(UserPost.id == post_id).values(**update_data)
+        )
+        await session.refresh(user_post)
+        return user_post
 
     @classmethod
     async def delete_user_post(
         cls,
+        user_id: UUID,
+        post_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> None:
-        ...
+        user_post = await cls.filter_get_user_post_by_id(
+            user_id=user_id, post_id=post_id, session=session
+        )
+        if request_user.id != user_post.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+        await session.delete(user_post)
+        await session.commit()
+        return
 
     # --- --- Comments --- ---
 

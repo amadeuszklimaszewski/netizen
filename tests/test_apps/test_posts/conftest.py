@@ -11,6 +11,11 @@ def post_data() -> dict[str, str]:
     return {"text": "test post"}
 
 
+@pytest.fixture
+def post_update_data() -> dict[str, str]:
+    return {"text": "test update"}
+
+
 @pytest_asyncio.fixture
 async def user_post_in_db(
     post_data: dict[str, str],
