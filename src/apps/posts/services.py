@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlmodel import select, update, and_, or_
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.posts.models import (
+    CommentInputSchema,
     GroupPost,
     GroupPostComment,
     GroupPostReaction,
@@ -158,23 +159,68 @@ class UserPostService:
     @classmethod
     async def create_user_post_comment(
         cls,
+        schema: CommentInputSchema,
+        user_id: UUID,
+        post_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> UserPostComment:
-        ...
+        user_post = await cls.filter_get_user_post_by_id(
+            user_id=user_id, post_id=post_id, session=session
+        )
+
+        user_post_comment_data = schema.dict()
+        user_post_comment = UserPostComment(
+            **user_post_comment_data, user_id=request_user.id, post_id=post_id
+        )
+        session.add(user_post_comment)
+        await session.commit()
+        await session.refresh(user_post_comment)
+        return user_post_comment
 
     @classmethod
     async def update_user_post_comment(
         cls,
+        schema: CommentInputSchema,
+        user_id: UUID,
+        post_id: UUID,
+        comment_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> UserPostComment:
-        ...
+        user_post_comment = await cls.filter_get_user_post_comment_by_id(
+            user_id=user_id, post_id=post_id, comment_id=comment_id, session=session
+        )
+        if request_user.id != user_post_comment.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+
+        user_post_comment_update_data = schema.dict()
+        await session.exec(
+            update(UserPostComment)
+            .where(UserPostComment.id == comment_id)
+            .values(**user_post_comment_update_data)
+        )
+        await session.commit()
+        await session.refresh(user_post_comment)
+        return user_post_comment
 
     @classmethod
     async def delete_user_post_comment(
         cls,
+        user_id: UUID,
+        post_id: UUID,
+        comment_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> None:
-        ...
+        user_post_comment = await cls.filter_get_user_post_comment_by_id(
+            user_id=user_id, post_id=post_id, comment_id=comment_id, session=session
+        )
+        if request_user.id != user_post_comment.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+        await session.delete(user_post_comment)
+        await session.commit()
+        return
 
     # --- --- Reactions --- ---
 

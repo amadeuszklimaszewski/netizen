@@ -281,3 +281,149 @@ async def test_filter_post_comment_by_id_raises_exeption_with_wrong_ids(
             comment_id=uuid4(),
             session=session,
         )
+
+
+@pytest.mark.asyncio
+async def test_user_post_service_correctly_creates_post_comment(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    comment_data: dict[str, str],
+    session: AsyncSession,
+):
+    schema = PostInputSchema(**comment_data)
+    user_post_comment = await UserPostService.create_user_post_comment(
+        schema=schema,
+        user_id=user_in_db.id,
+        post_id=user_post_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert user_post_comment.user_id == user_in_db.id
+    assert user_post_comment.post_id == user_post_in_db.id
+    assert user_post_comment.text == comment_data["text"]
+
+    result = (await session.exec(select(UserPostComment))).all()
+    assert len(result) == 1
+    assert result[0].user_id == user_in_db.id
+    assert result[0].post_id == user_post_in_db.id
+    assert result[0].text == comment_data["text"]
+
+
+@pytest.mark.asyncio
+async def test_user_post_service_correctly_updates_post_comment(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    comment_update_data: dict[str, str],
+    user_post_comment_in_db: UserPostComment,
+    session: AsyncSession,
+):
+    schema = PostInputSchema(**comment_update_data)
+    user_post_comment = await UserPostService.update_user_post_comment(
+        schema=schema,
+        user_id=user_in_db.id,
+        post_id=user_post_in_db.id,
+        comment_id=user_post_comment_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert user_post_comment.user_id == user_in_db.id
+    assert user_post_comment.post_id == user_post_in_db.id
+    assert user_post_comment.text == comment_update_data["text"]
+
+    result = (await session.exec(select(UserPostComment))).all()
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_update_post_comment_raises_exceptions_with_wrong_ids(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    comment_update_data: dict[str, str],
+    user_post_comment_in_db: UserPostComment,
+    session: AsyncSession,
+):
+    schema = PostInputSchema(**comment_update_data)
+    with pytest.raises(DoesNotExistException):
+        user_post_comment = await UserPostService.update_user_post_comment(
+            schema=schema,
+            user_id=uuid4(),
+            post_id=user_post_in_db.id,
+            comment_id=user_post_comment_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        user_post_comment = await UserPostService.update_user_post_comment(
+            schema=schema,
+            user_id=user_in_db.id,
+            post_id=uuid4(),
+            comment_id=user_post_comment_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        user_post_comment = await UserPostService.update_user_post_comment(
+            schema=schema,
+            user_id=user_in_db.id,
+            post_id=user_post_in_db.id,
+            comment_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_post_comment_raises_exceptions_with_wrong_request_user(
+    user_in_db: User,
+    other_user_in_db: User,
+    user_post_in_db: UserPost,
+    comment_update_data: dict[str, str],
+    user_post_comment_in_db: UserPostComment,
+    session: AsyncSession,
+):
+    schema = PostInputSchema(**comment_update_data)
+    with pytest.raises(PermissionDeniedException):
+        user_post_comment = await UserPostService.update_user_post_comment(
+            schema=schema,
+            user_id=user_in_db.id,
+            post_id=user_post_in_db.id,
+            comment_id=user_post_comment_in_db.id,
+            request_user=other_user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_user_post_service_correctly_deletes_post_comment(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_comment_in_db: UserPostComment,
+    session: AsyncSession,
+):
+    await UserPostService.delete_user_post_comment(
+        user_id=user_in_db.id,
+        post_id=user_post_in_db.id,
+        comment_id=user_post_comment_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    result = (await session.exec(select(UserPostComment))).all()
+    assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_post_comment_raises_exceptions_with_wrong_request_user(
+    user_in_db: User,
+    other_user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_comment_in_db: UserPostComment,
+    session: AsyncSession,
+):
+    with pytest.raises(PermissionDeniedException):
+        await UserPostService.delete_user_post_comment(
+            user_id=user_in_db.id,
+            post_id=user_post_in_db.id,
+            comment_id=user_post_comment_in_db.id,
+            request_user=other_user_in_db,
+            session=session,
+        )

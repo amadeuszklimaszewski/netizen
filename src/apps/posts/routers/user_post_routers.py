@@ -3,6 +3,7 @@ from typing import Union
 
 from fastapi import Depends, status
 from fastapi.routing import APIRouter
+from httpcore import request
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.posts.services import UserPostService
 
@@ -151,11 +152,21 @@ async def get_user_post_comment_list(
     response_model=CommentOutputSchema,
 )
 async def create_user_post_comment(
+    schema: CommentInputSchema,
+    user_id: UUID,
+    post_id: UUID,
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> CommentOutputSchema:
-    ...
+    user_post_comment = await post_service.create_user_post_comment(
+        schema=schema,
+        user_id=user_id,
+        post_id=post_id,
+        request_user=request_user,
+        session=session,
+    )
+    return CommentOutputSchema.from_orm(user_post_comment)
 
 
 @user_post_router.get(
@@ -184,28 +195,46 @@ async def get_user_post_comment_by_id(
     response_model=CommentOutputSchema,
 )
 async def update_user_post_comment(
+    schema: CommentInputSchema,
     user_id: UUID,
     post_id: UUID,
     comment_id: UUID,
+    request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> CommentOutputSchema:
-    ...
+    user_post_comment = await post_service.update_user_post_comment(
+        schema=schema,
+        user_id=user_id,
+        post_id=post_id,
+        comment_id=comment_id,
+        request_user=request_user,
+        session=session,
+    )
+    return CommentOutputSchema.from_orm(user_post_comment)
 
 
 @user_post_router.delete(
     "/{user_id}/posts/{post_id}/comments/{comment_id}/",
     tags=["user-post-comments"],
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_user_post_comment(
     user_id: UUID,
     post_id: UUID,
     comment_id: UUID,
+    request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> None:
-    ...
+    await post_service.delete_user_post_comment(
+        user_id=user_id,
+        post_id=post_id,
+        comment_id=comment_id,
+        request_user=request_user,
+        session=session,
+    )
+    return
 
 
 @user_post_router.get(
