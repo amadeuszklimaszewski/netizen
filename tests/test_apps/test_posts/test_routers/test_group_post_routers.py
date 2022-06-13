@@ -182,3 +182,35 @@ async def test_anonymous_user_cannot_update_user_post(
     response_body = response.json()
     assert len(response_body) == 1
     assert response_body["detail"] == "Missing Authorization Header"
+
+
+@pytest.mark.asyncio
+async def test_user_can_delete_user_post(
+    client: AsyncClient,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    user_bearer_token_header: dict[str, str],
+):
+
+    response = await client.delete(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_delete_user_post(
+    client: AsyncClient,
+    group_post_in_db: GroupPost,
+    public_group_in_db: Group,
+):
+
+    response = await client.delete(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/",
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    response_body = response.json()
+    assert len(response_body) == 1
+    assert response_body["detail"] == "Missing Authorization Header"

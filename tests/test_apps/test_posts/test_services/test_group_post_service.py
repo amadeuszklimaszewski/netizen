@@ -283,3 +283,21 @@ async def test_group_post_service_correctly_deletes_post(
 
     result = (await session.exec(select(GroupPost))).all()
     assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_group_post_service_correctly_deletes_post(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    session: AsyncSession,
+):
+    await GroupPostService.delete_group_post(
+        group_id=public_group_in_db.id,
+        post_id=group_post_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+
+    result = (await session.exec(select(GroupPost))).all()
+    assert len(result) == 0
