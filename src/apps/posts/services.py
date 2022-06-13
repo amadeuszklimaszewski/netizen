@@ -122,16 +122,38 @@ class UserPostService:
     @classmethod
     async def filter_get_user_post_comment_list(
         cls,
+        user_id: UUID,
+        post_id: UUID,
         session: AsyncSession,
     ) -> list[UserPostComment]:
-        ...
+        await cls.filter_get_user_post_by_id(
+            user_id=user_id, post_id=post_id, session=session
+        )
+        return (
+            await session.exec(
+                select(UserPostComment).where(UserPostComment.post_id == post_id)
+            )
+        ).all()
 
     @classmethod
     async def filter_get_user_post_comment_by_id(
         cls,
+        user_id: UUID,
+        post_id: UUID,
+        comment_id: UUID,
         session: AsyncSession,
     ) -> UserPostComment:
-        ...
+        await cls.filter_get_user_post_by_id(
+            user_id=user_id, post_id=post_id, session=session
+        )
+        user_post_comment = (
+            await session.exec(
+                select(UserPostComment).where(UserPostComment.id == comment_id)
+            )
+        ).first()
+        if user_post_comment is None:
+            raise DoesNotExistException("Comment with given id does not exist")
+        return user_post_comment
 
     @classmethod
     async def create_user_post_comment(

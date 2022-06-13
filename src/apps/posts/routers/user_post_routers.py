@@ -129,10 +129,19 @@ async def delete_user_post(
     response_model=list[CommentOutputSchema],
 )
 async def get_user_post_comment_list(
+    user_id: UUID,
+    post_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-) -> list[UserPostComment]:
-    ...
+) -> list[CommentOutputSchema]:
+    return [
+        CommentOutputSchema.from_orm(user_post_comment)
+        for user_post_comment in (
+            await post_service.filter_get_user_post_comment_list(
+                user_id=user_id, post_id=post_id, session=session
+            )
+        )
+    ]
 
 
 @user_post_router.post(
@@ -145,7 +154,7 @@ async def create_user_post_comment(
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-) -> UserPostComment:
+) -> CommentOutputSchema:
     ...
 
 
@@ -161,8 +170,11 @@ async def get_user_post_comment_by_id(
     comment_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-) -> UserPostComment:
-    ...
+) -> CommentOutputSchema:
+    user_post_comment = await post_service.filter_get_user_post_comment_by_id(
+        user_id=user_id, post_id=post_id, comment_id=comment_id, session=session
+    )
+    return CommentOutputSchema.from_orm(user_post_comment)
 
 
 @user_post_router.put(
@@ -177,7 +189,7 @@ async def update_user_post_comment(
     comment_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-) -> UserPostComment:
+) -> CommentOutputSchema:
     ...
 
 

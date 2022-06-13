@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.apps.posts.models import PostInputSchema, UserPost
+from src.apps.posts.models import PostInputSchema, UserPost, UserPostComment
 from src.apps.posts.services import UserPostService
 from src.apps.users.models import User
 from src.core.exceptions import DoesNotExistException, PermissionDeniedException
@@ -198,5 +198,86 @@ async def test_delete_user_post_raises_exception_with_wrong_request_user(
             user_id=user_in_db.id,
             post_id=user_post_in_db.id,
             request_user=other_user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_user_post_service_correctly_filters_post_comment_list(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_comment_in_db: UserPostComment,
+    session: AsyncSession,
+):
+    comments = await UserPostService.filter_get_user_post_comment_list(
+        user_id=user_in_db.id, post_id=user_post_in_db.id, session=session
+    )
+    assert len(comments) == 1
+    assert comments[0].user_id == user_post_comment_in_db.user_id
+    assert comments[0].post_id == user_post_comment_in_db.post_id
+    assert comments[0].text == user_post_comment_in_db.text
+
+
+@pytest.mark.asyncio
+async def test_filter_post_comment_list_raises_exeption_with_wrong_ids(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_comment_in_db: UserPostComment,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        comments = await UserPostService.filter_get_user_post_comment_list(
+            user_id=uuid4(), post_id=user_post_in_db.id, session=session
+        )
+    with pytest.raises(DoesNotExistException):
+        comments = await UserPostService.filter_get_user_post_comment_list(
+            user_id=user_in_db.id, post_id=uuid4(), session=session
+        )
+
+
+@pytest.mark.asyncio
+async def test_user_post_service_correctly_filters_post_comment_by_id(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_comment_in_db: UserPostComment,
+    session: AsyncSession,
+):
+    comment = await UserPostService.filter_get_user_post_comment_by_id(
+        user_id=user_in_db.id,
+        post_id=user_post_in_db.id,
+        comment_id=user_post_comment_in_db.id,
+        session=session,
+    )
+    assert comment.user_id == user_post_comment_in_db.user_id
+    assert comment.post_id == user_post_comment_in_db.post_id
+    assert comment.text == user_post_comment_in_db.text
+
+
+@pytest.mark.asyncio
+async def test_filter_post_comment_by_id_raises_exeption_with_wrong_ids(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    user_post_comment_in_db: UserPostComment,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        comment = await UserPostService.filter_get_user_post_comment_by_id(
+            user_id=uuid4(),
+            post_id=user_post_in_db.id,
+            comment_id=user_post_comment_in_db.id,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        comment = await UserPostService.filter_get_user_post_comment_by_id(
+            user_id=user_in_db.id,
+            post_id=uuid4(),
+            comment_id=user_post_comment_in_db.id,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        comment = await UserPostService.filter_get_user_post_comment_by_id(
+            user_id=user_in_db.id,
+            post_id=user_post_in_db.id,
+            comment_id=uuid4(),
             session=session,
         )

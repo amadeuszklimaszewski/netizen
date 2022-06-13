@@ -104,7 +104,7 @@ def reaction_update_data() -> dict[str, str]:
 
 
 @pytest_asyncio.fixture
-async def user_post_comment_in_db(
+async def user_post_reaction_in_db(
     reaction_data: dict[str, str],
     user_in_db: User,
     user_post_in_db: UserPost,
@@ -120,7 +120,7 @@ async def user_post_comment_in_db(
 
 
 @pytest_asyncio.fixture
-async def user_post_comment_in_db(
+async def group_post_reaction_in_db(
     reaction_data: dict[str, str],
     user_in_db: User,
     group_post_in_db: UserPost,
