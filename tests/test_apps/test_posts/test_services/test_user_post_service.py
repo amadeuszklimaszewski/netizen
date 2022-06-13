@@ -24,6 +24,13 @@ async def test_user_post_service_correctly_filters_post_list(
     assert posts[0].user_id == user_in_db.id
     assert posts[0].text == user_post_in_db.text
 
+    await session.delete(user_in_db)
+    await session.commit()
+    posts = await UserPostService.filter_get_user_post_list(
+        user_id=user_in_db.id, session=session
+    )
+    assert len(posts) == 0
+
 
 @pytest.mark.asyncio
 async def test_user_post_service_correctly_creates_post(

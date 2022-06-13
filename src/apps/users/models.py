@@ -59,6 +59,7 @@ class User(TimeStampedUUIDModelBase, UserBase, table=True):
             primaryjoin="User.id == FriendRequest.from_user_id",
         )
     )
+
     friends: list["Friend"] = Relationship(
         sa_relationship=relationship(
             "Friend",
