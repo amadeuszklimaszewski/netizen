@@ -30,13 +30,6 @@ async def test_user_post_service_correctly_filters_post_list(
     assert posts[0].user_id == user_in_db.id
     assert posts[0].text == user_post_in_db.text
 
-    await session.delete(user_in_db)
-    await session.commit()
-    posts = await UserPostService.filter_get_user_post_list(
-        user_id=user_in_db.id, session=session
-    )
-    assert len(posts) == 0
-
 
 @pytest.mark.asyncio
 async def test_user_post_service_correctly_creates_post(
@@ -104,6 +97,18 @@ async def test_user_post_service_correctly_filters_user_post_by_id(
     )
     assert post.user_id == user_in_db.id
     assert post.text == user_post_in_db.text
+
+
+@pytest.mark.asyncio
+async def test_filter_user_post_list_raises_exception_with_wrong_user_id(
+    user_in_db: User,
+    user_post_in_db: UserPost,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        post = await UserPostService.filter_get_user_post_list(
+            user_id=uuid4(), session=session
+        )
 
 
 @pytest.mark.asyncio

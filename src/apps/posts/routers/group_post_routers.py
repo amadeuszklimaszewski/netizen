@@ -3,12 +3,15 @@ from typing import Union
 
 from fastapi import Depends, status
 from fastapi.routing import APIRouter
+from httpcore import request
 from sqlmodel.ext.asyncio.session import AsyncSession
+from src.apps.posts.services import GroupPostService
 
 from src.database.connection import get_db
 from src.apps.users.models import User
 from src.dependencies.users import authenticate_user, get_user_or_none
 from src.apps.posts.models import (
+    GroupPostOutputSchema,
     PostInputSchema,
     PostOutputSchema,
     CommentInputSchema,
@@ -24,56 +27,83 @@ group_post_router = APIRouter()
     "/{group_id}/posts/",
     tags=["group-posts"],
     status_code=status.HTTP_200_OK,
-    response_model=list[PostOutputSchema],
+    response_model=list[GroupPostOutputSchema],
 )
 async def get_user_posts(
     group_id: UUID,
+    request_user: User = Depends(get_user_or_none),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
-    ...
+) -> list[GroupPostOutputSchema]:
+    return [
+        GroupPostOutputSchema.from_orm(user_post)
+        for user_post in (
+            await post_service.filter_get_group_post_list(
+                group_id=group_id, request_user=request_user, session=session
+            )
+        )
+    ]
 
 
 @group_post_router.post(
     "/{group_id}/posts/",
     tags=["group-posts"],
     status_code=status.HTTP_201_CREATED,
-    response_model=PostOutputSchema,
+    response_model=GroupPostOutputSchema,
 )
 async def create_user_post(
+    schema: PostInputSchema,
     group_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
-    ...
+) -> GroupPostOutputSchema:
+    group_post = await post_service.create_group_post(
+        schema=schema, group_id=group_id, request_user=request_user, session=session
+    )
 
 
 @group_post_router.get(
     "/{group_id}/posts/{post_id}/",
     tags=["group-posts"],
     status_code=status.HTTP_200_OK,
-    response_model=PostOutputSchema,
+    response_model=GroupPostOutputSchema,
 )
 async def get_user_post_by_id(
     group_id: UUID,
     post_id: UUID,
+    request_user: User = Depends(get_user_or_none),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
-    ...
+) -> GroupPostOutputSchema:
+    group_post = await post_service.filter_get_group_post_by_id(
+        group_id=group_id, post_id=post_id, request_user=request_user, session=session
+    )
+    return GroupPostOutputSchema.from_orm(group_post)
 
 
 @group_post_router.put(
     "/{group_id}/posts/{post_id}/",
     tags=["group-posts"],
     status_code=status.HTTP_200_OK,
-    response_model=PostOutputSchema,
+    response_model=GroupPostOutputSchema,
 )
 async def update_user_post(
+    schema: PostInputSchema,
     group_id: UUID,
     post_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
-    ...
+) -> GroupPostOutputSchema:
+    group_post = await post_service.update_group_post(
+        schema=schema,
+        group_id=group_id,
+        post_id=post_id,
+        request_user=request_user,
+        session=session,
+    )
+    return GroupPostOutputSchema.from_orm(group_post)
 
 
 @group_post_router.delete(
@@ -85,9 +115,13 @@ async def delete_group_post(
     group_id: UUID,
     post_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
-    ...
+) -> None:
+    await post_service.delete_group_post(
+        group_id=group_id, post_id=post_id, request_user=request_user, session=session
+    )
+    return
 
 
 @group_post_router.get(
@@ -99,8 +133,10 @@ async def delete_group_post(
 async def get_group_post_comment_list(
     group_id: UUID,
     post_id: UUID,
+    request_user: User = Depends(get_user_or_none),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> list[CommentOutputSchema]:
     ...
 
 
@@ -114,8 +150,9 @@ async def create_group_post_comment(
     group_id: UUID,
     post_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> CommentOutputSchema:
     ...
 
 
@@ -129,8 +166,10 @@ async def get_group_post_comment_by_id(
     group_id: UUID,
     post_id: UUID,
     comment_id: UUID,
+    request_user: User = Depends(get_user_or_none),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> CommentOutputSchema:
     ...
 
 
@@ -144,8 +183,10 @@ async def update_group_post_comment(
     group_id: UUID,
     post_id: UUID,
     comment_id: UUID,
+    request_user: User = Depends(authenticate_user),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> CommentOutputSchema:
     ...
 
 
@@ -158,8 +199,10 @@ async def delete_group_post_comment(
     group_id: UUID,
     post_id: UUID,
     comment_id: UUID,
+    request_user: User = Depends(authenticate_user),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     ...
 
 
@@ -167,13 +210,15 @@ async def delete_group_post_comment(
     "/{group_id}/posts/{post_id}/reactions/",
     tags=["group-post-reactions"],
     status_code=status.HTTP_200_OK,
-    response_model=list[CommentOutputSchema],
+    response_model=list[ReactionOutputSchema],
 )
 async def get_group_post_reaction_list(
     group_id: UUID,
     post_id: UUID,
+    request_user: User = Depends(get_user_or_none),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> list[ReactionOutputSchema]:
     ...
 
 
@@ -187,8 +232,9 @@ async def create_group_post_reaction(
     group_id: UUID,
     post_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> ReactionOutputSchema:
     ...
 
 
@@ -202,8 +248,10 @@ async def get_group_post_reaction_by_id(
     group_id: UUID,
     post_id: UUID,
     reaction_id: UUID,
+    request_user: User = Depends(get_user_or_none),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> ReactionOutputSchema:
     ...
 
 
@@ -218,8 +266,9 @@ async def update_group_post_reaction(
     post_id: UUID,
     reaction_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> ReactionOutputSchema:
     ...
 
 
@@ -233,6 +282,7 @@ async def delete_group_post_reaction(
     post_id: UUID,
     reaction_id: UUID,
     request_user: User = Depends(authenticate_user),
+    post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     ...

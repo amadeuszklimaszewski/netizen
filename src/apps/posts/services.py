@@ -2,6 +2,7 @@ from typing import Union
 from uuid import UUID
 from sqlmodel import select, update, and_, or_
 from sqlmodel.ext.asyncio.session import AsyncSession
+from src.apps.groups.models import Group, GroupMembership
 from src.apps.posts.models import (
     CommentInputSchema,
     GroupPost,
@@ -34,6 +35,7 @@ class UserPostService:
         user_id: UUID,
         session: AsyncSession,
     ) -> list[UserPost]:
+        user = await get_object_by_id(Table=User, id=user_id, session=session)
         return (
             await session.exec(select(UserPost).where(UserPost.user_id == user_id))
         ).all()
@@ -330,25 +332,106 @@ class UserPostService:
 
 class GroupPostService:
 
+    # --- --- Utils --- ---
+
+    @classmethod
+    async def _validate_user_access_on_get(
+        cls,
+        group_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ):
+        group = await get_object_by_id(Table=Group, id=group_id, session=session)
+
+        membership = None
+        if request_user:
+            membership = (
+                await session.exec(
+                    select(GroupMembership).where(
+                        and_(
+                            GroupMembership.group_id == group_id,
+                            GroupMembership.user_id == request_user.id,
+                        )
+                    )
+                )
+            ).first()
+        if not membership and group.status != "PUBLIC":
+            raise PermissionDeniedException("User unauthorized.")
+        return
+
+    @classmethod
+    async def _validate_user_access_on_post_put_delete(
+        cls,
+        group_id: UUID,
+        request_user: User,
+        session: AsyncSession,
+    ):
+        group = await get_object_by_id(Table=Group, id=group_id, session=session)
+
+        membership = None
+        if request_user:
+            membership = (
+                await session.exec(
+                    select(GroupMembership).where(
+                        and_(
+                            GroupMembership.group_id == group_id,
+                            GroupMembership.user_id == request_user.id,
+                        )
+                    )
+                )
+            ).first()
+        if not membership:
+            raise PermissionDeniedException("User unauthorized.")
+        return
+
     # --- --- Posts --- ---
 
     @classmethod
-    async def filter_get_group_posts(
+    async def filter_get_group_post_list(
         cls,
+        group_id: UUID,
+        request_user: Union[User, None],
         session: AsyncSession,
     ) -> list[GroupPost]:
-        ...
+        await cls._validate_user_access_on_get(
+            group_id=group_id, request_user=request_user, session=session
+        )
+
+        return (
+            await session.exec(select(GroupPost).where(GroupPost.group_id == group_id))
+        ).all()
 
     @classmethod
     async def filter_get_group_post_by_id(
         cls,
+        group_id: UUID,
+        post_id: UUID,
+        request_user: Union[User, None],
         session: AsyncSession,
     ) -> GroupPost:
-        ...
+        await cls._validate_user_access_on_get(
+            group_id=group_id, request_user=request_user, session=session
+        )
+        group_post = (
+            await session.exec(
+                select(GroupPost).where(
+                    and_(
+                        GroupPost.group_id == group_id,
+                        GroupPost.id == post_id,
+                    )
+                )
+            )
+        ).first()
+        if group_post is None:
+            raise DoesNotExistException("Group post with given id does not exist.")
+        return group_post
 
     @classmethod
     async def create_group_post(
         cls,
+        schema: PostInputSchema,
+        group_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> GroupPost:
         ...
@@ -356,6 +439,10 @@ class GroupPostService:
     @classmethod
     async def update_group_post(
         cls,
+        schema: PostInputSchema,
+        group_id: UUID,
+        post_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> GroupPost:
         ...
@@ -363,6 +450,9 @@ class GroupPostService:
     @classmethod
     async def delete_group_post(
         cls,
+        group_id: UUID,
+        post_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> None:
         ...
@@ -370,8 +460,11 @@ class GroupPostService:
     # --- --- Comments --- ---
 
     @classmethod
-    async def filter_get_group_post_comments(
+    async def filter_get_group_post_comment_list(
         cls,
+        group_id: UUID,
+        post_id: UUID,
+        request_user: Union[User, None],
         session: AsyncSession,
     ) -> list[GroupPostComment]:
         ...
@@ -379,6 +472,10 @@ class GroupPostService:
     @classmethod
     async def filter_get_group_post_comment_by_id(
         cls,
+        group_id: UUID,
+        post_id: UUID,
+        comment_id: UUID,
+        request_user: Union[User, None],
         session: AsyncSession,
     ) -> GroupPostComment:
         ...
@@ -386,6 +483,10 @@ class GroupPostService:
     @classmethod
     async def create_group_post_comment(
         cls,
+        schema: CommentInputSchema,
+        group_id: UUID,
+        post_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> GroupPostComment:
         ...
@@ -393,6 +494,11 @@ class GroupPostService:
     @classmethod
     async def update_group_post_comment(
         cls,
+        schema: CommentInputSchema,
+        group_id: UUID,
+        post_id: UUID,
+        comment_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> GroupPostComment:
         ...
@@ -400,6 +506,10 @@ class GroupPostService:
     @classmethod
     async def delete_group_post_comment(
         cls,
+        group_id: UUID,
+        post_id: UUID,
+        comment_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> None:
         ...
@@ -407,8 +517,11 @@ class GroupPostService:
     # --- --- Reactions --- ---
 
     @classmethod
-    async def filter_get_group_post_reactions(
+    async def filter_get_group_post_reaction_list(
         cls,
+        group_id: UUID,
+        post_id: UUID,
+        request_user: Union[User, None],
         session: AsyncSession,
     ) -> list[GroupPostReaction]:
         ...
@@ -416,6 +529,10 @@ class GroupPostService:
     @classmethod
     async def filter_get_group_post_reaction_by_id(
         cls,
+        group_id: UUID,
+        post_id: UUID,
+        reaction_id: UUID,
+        request_user: Union[User, None],
         session: AsyncSession,
     ) -> GroupPostReaction:
         ...
@@ -423,6 +540,10 @@ class GroupPostService:
     @classmethod
     async def create_group_post_reaction(
         cls,
+        schema: ReactionInputSchema,
+        group_id: UUID,
+        post_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> GroupPostReaction:
         ...
@@ -430,6 +551,11 @@ class GroupPostService:
     @classmethod
     async def update_group_post_reaction(
         cls,
+        schema: ReactionInputSchema,
+        group_id: UUID,
+        post_id: UUID,
+        reaction_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> GroupPostReaction:
         ...
@@ -437,6 +563,10 @@ class GroupPostService:
     @classmethod
     async def delete_group_post_reaction(
         cls,
+        group_id: UUID,
+        post_id: UUID,
+        reaction_id: UUID,
+        request_user: User,
         session: AsyncSession,
     ) -> None:
         ...

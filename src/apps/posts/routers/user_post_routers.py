@@ -248,7 +248,7 @@ async def get_user_post_reaction_list(
     post_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> list[ReactionOutputSchema]:
     return [
         ReactionOutputSchema.from_orm(user_post_reaction)
         for user_post_reaction in (
@@ -272,7 +272,7 @@ async def create_user_post_reaction(
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> ReactionOutputSchema:
     user_post_comment = await post_service.create_user_post_reaction(
         schema=schema,
         user_id=user_id,
@@ -295,7 +295,7 @@ async def get_user_post_reaction_by_id(
     reaction_id: UUID,
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> ReactionOutputSchema:
     user_post_reaction = await post_service.filter_get_user_post_reaction_by_id(
         user_id=user_id, post_id=post_id, reaction_id=reaction_id, session=session
     )
@@ -316,7 +316,7 @@ async def update_user_post_reaction(
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> ReactionOutputSchema:
     user_post_reaction = await post_service.update_user_post_reaction(
         schema=schema,
         user_id=user_id,
@@ -340,7 +340,7 @@ async def delete_user_post_reaction(
     request_user: User = Depends(authenticate_user),
     post_service: UserPostService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     await post_service.delete_user_post_reaction(
         user_id=user_id,
         post_id=post_id,

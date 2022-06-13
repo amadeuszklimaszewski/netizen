@@ -7,7 +7,7 @@ from src.apps.users.models import User
 
 
 @pytest.mark.asyncio
-async def test_user_can_get_user_posts_list(
+async def test_user_can_get_user_post_list(
     client: AsyncClient,
     user_in_db: User,
     user_post_in_db: UserPost,
@@ -23,7 +23,7 @@ async def test_user_can_get_user_posts_list(
 
 
 @pytest.mark.asyncio
-async def test_anonymous_user_can_get_user_posts_list(
+async def test_anonymous_user_can_get_user_post_list(
     client: AsyncClient,
     user_in_db: User,
     user_post_in_db: UserPost,
