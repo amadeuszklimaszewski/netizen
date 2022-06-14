@@ -275,25 +275,6 @@ async def test_group_post_service_correctly_deletes_post(
     group_post_in_db: GroupPost,
     session: AsyncSession,
 ):
-    schema = PostInputSchema(**post_update_data)
-    post = await GroupPostService.delete_group_post(
-        group_id=public_group_in_db.id,
-        post_id=group_post_in_db.id,
-        request_user=user_in_db,
-        session=session,
-    )
-
-    result = (await session.exec(select(GroupPost))).all()
-    assert len(result) == 0
-
-
-@pytest.mark.asyncio
-async def test_group_post_service_correctly_deletes_post(
-    user_in_db: User,
-    public_group_in_db: Group,
-    group_post_in_db: GroupPost,
-    session: AsyncSession,
-):
     await GroupPostService.delete_group_post(
         group_id=public_group_in_db.id,
         post_id=group_post_in_db.id,
@@ -501,7 +482,7 @@ async def test_group_post_service_correctly_deletes_post_comment(
     group_post_comment_in_db: GroupPostComment,
     session: AsyncSession,
 ):
-    comment = await GroupPostService.delete_group_post_comment(
+    await GroupPostService.delete_group_post_comment(
         group_id=public_group_in_db.id,
         post_id=group_post_in_db.id,
         comment_id=group_post_comment_in_db.id,
@@ -522,7 +503,7 @@ async def test_delete_post_comment_raises_exceptions_with_invalid_ids(
     session: AsyncSession,
 ):
     with pytest.raises(DoesNotExistException):
-        comment = await GroupPostService.delete_group_post_comment(
+        await GroupPostService.delete_group_post_comment(
             group_id=uuid4(),
             post_id=group_post_in_db.id,
             comment_id=group_post_comment_in_db.id,
@@ -530,7 +511,7 @@ async def test_delete_post_comment_raises_exceptions_with_invalid_ids(
             session=session,
         )
     with pytest.raises(DoesNotExistException):
-        comment = await GroupPostService.delete_group_post_comment(
+        await GroupPostService.delete_group_post_comment(
             group_id=public_group_in_db.id,
             post_id=uuid4(),
             comment_id=group_post_comment_in_db.id,
@@ -538,7 +519,7 @@ async def test_delete_post_comment_raises_exceptions_with_invalid_ids(
             session=session,
         )
     with pytest.raises(DoesNotExistException):
-        comment = await GroupPostService.delete_group_post_comment(
+        await GroupPostService.delete_group_post_comment(
             group_id=public_group_in_db.id,
             post_id=group_post_in_db.id,
             comment_id=uuid4(),
@@ -727,6 +708,60 @@ async def test_update_post_reaction_raises_exceptions_with_invalid_ids(
     with pytest.raises(DoesNotExistException):
         reaction = await GroupPostService.update_group_post_reaction(
             schema=schema,
+            group_id=public_group_in_db.id,
+            post_id=group_post_in_db.id,
+            reaction_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_group_post_service_correctly_deletes_post_reaction(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_reaction_in_db: GroupPostReaction,
+    session: AsyncSession,
+):
+    await GroupPostService.delete_group_post_reaction(
+        group_id=public_group_in_db.id,
+        post_id=group_post_in_db.id,
+        reaction_id=group_post_reaction_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+
+    result = (await session.exec(select(GroupPostReaction))).all()
+    assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_post_reaction_raises_exceptions_with_invalid_ids(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_reaction_in_db: GroupPostReaction,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        await GroupPostService.delete_group_post_reaction(
+            group_id=uuid4(),
+            post_id=group_post_in_db.id,
+            reaction_id=group_post_reaction_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        await GroupPostService.delete_group_post_reaction(
+            group_id=public_group_in_db.id,
+            post_id=uuid4(),
+            reaction_id=group_post_reaction_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        await GroupPostService.delete_group_post_reaction(
             group_id=public_group_in_db.id,
             post_id=group_post_in_db.id,
             reaction_id=uuid4(),

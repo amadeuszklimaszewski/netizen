@@ -571,3 +571,32 @@ async def test_anonymous_user_cannot_update_group_post_reaction(
         json=reaction_update_data,
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.asyncio
+async def test_user_can_delete_group_post_reaction(
+    client: AsyncClient,
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_reaction_in_db: GroupPostReaction,
+    user_bearer_token_header: dict[str, str],
+):
+    response = await client.delete(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/reactions/{group_post_reaction_in_db.id}/",
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_delete_group_post_reaction(
+    client: AsyncClient,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_reaction_in_db: GroupPostReaction,
+):
+    response = await client.put(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/reactions/{group_post_reaction_in_db.id}/",
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED

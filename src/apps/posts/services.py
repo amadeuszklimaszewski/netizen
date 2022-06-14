@@ -785,4 +785,15 @@ class GroupPostService:
         request_user: User,
         session: AsyncSession,
     ) -> None:
-        ...
+        await cls._validate_user_access_on_post_put_delete(
+            group_id=group_id, request_user=request_user, session=session
+        )
+        group_post_reaction = await cls._find_group_post_reaction(
+            group_id=group_id, post_id=post_id, reaction_id=reaction_id, session=session
+        )
+        if request_user.id != group_post_reaction.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+
+        await session.delete(group_post_reaction)
+        await session.commit()
+        return

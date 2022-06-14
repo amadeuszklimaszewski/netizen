@@ -350,7 +350,7 @@ async def update_group_post_reaction(
 @group_post_router.delete(
     "/{group_id}/posts/{post_id}/reactions/{reaction_id}/",
     tags=["group-post-reactions"],
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_group_post_reaction(
     group_id: UUID,
@@ -360,4 +360,11 @@ async def delete_group_post_reaction(
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> None:
-    ...
+    await post_service.delete_group_post_reaction(
+        group_id=group_id,
+        post_id=post_id,
+        reaction_id=reaction_id,
+        request_user=request_user,
+        session=session,
+    )
+    return
