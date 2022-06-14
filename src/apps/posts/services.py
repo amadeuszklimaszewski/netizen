@@ -625,7 +625,23 @@ class GroupPostService:
         request_user: User,
         session: AsyncSession,
     ) -> GroupPostComment:
-        ...
+        await cls._validate_user_access_on_post_put_delete(
+            group_id=group_id, request_user=request_user, session=session
+        )
+        group_post_comment = await cls._find_group_post_comment(
+            group_id=group_id, post_id=post_id, comment_id=comment_id, session=session
+        )
+        if request_user.id != group_post_comment.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+
+        group_post_comment_update_data = schema.dict()
+        await session.exec(
+            update(GroupPostComment)
+            .where(GroupPostComment.id == comment_id)
+            .values(**group_post_comment_update_data)
+        )
+        await session.refresh(group_post_comment)
+        return group_post_comment
 
     @classmethod
     async def delete_group_post_comment(
@@ -636,7 +652,18 @@ class GroupPostService:
         request_user: User,
         session: AsyncSession,
     ) -> None:
-        ...
+        await cls._validate_user_access_on_post_put_delete(
+            group_id=group_id, request_user=request_user, session=session
+        )
+        group_post_comment = await cls._find_group_post_comment(
+            group_id=group_id, post_id=post_id, comment_id=comment_id, session=session
+        )
+        if request_user.id != group_post_comment.user_id:
+            raise PermissionDeniedException("User unauthorized.")
+
+        await session.delete(group_post_comment)
+        await session.commit()
+        return
 
     # --- --- Reactions --- ---
 

@@ -205,6 +205,7 @@ async def get_group_post_comment_by_id(
     response_model=CommentOutputSchema,
 )
 async def update_group_post_comment(
+    schema: CommentInputSchema,
     group_id: UUID,
     post_id: UUID,
     comment_id: UUID,
@@ -212,13 +213,21 @@ async def update_group_post_comment(
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> CommentOutputSchema:
-    ...
+    group_post_comment = await post_service.update_group_post_comment(
+        schema=schema,
+        group_id=group_id,
+        post_id=post_id,
+        comment_id=comment_id,
+        request_user=request_user,
+        session=session,
+    )
+    return CommentOutputSchema.from_orm(group_post_comment)
 
 
 @group_post_router.delete(
     "/{group_id}/posts/{post_id}/comments/{comment_id}/",
     tags=["group-post-comments"],
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_group_post_comment(
     group_id: UUID,
@@ -228,7 +237,14 @@ async def delete_group_post_comment(
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> None:
-    ...
+    await post_service.delete_group_post_comment(
+        group_id=group_id,
+        post_id=post_id,
+        comment_id=comment_id,
+        request_user=request_user,
+        session=session,
+    )
+    return
 
 
 @group_post_router.get(
