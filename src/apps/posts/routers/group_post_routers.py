@@ -260,7 +260,17 @@ async def get_group_post_reaction_list(
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> list[ReactionOutputSchema]:
-    ...
+    return [
+        ReactionOutputSchema.from_orm(group_post_reaction)
+        for group_post_reaction in (
+            await post_service.filter_get_group_post_reaction_list(
+                group_id=group_id,
+                post_id=post_id,
+                request_user=request_user,
+                session=session,
+            )
+        )
+    ]
 
 
 @group_post_router.post(
@@ -293,7 +303,14 @@ async def get_group_post_reaction_by_id(
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> ReactionOutputSchema:
-    ...
+    group_post_reaction = await post_service.filter_get_group_post_reaction_by_id(
+        group_id=group_id,
+        post_id=post_id,
+        reaction_id=reaction_id,
+        request_user=request_user,
+        session=session,
+    )
+    return ReactionOutputSchema.from_orm(group_post_reaction)
 
 
 @group_post_router.put(

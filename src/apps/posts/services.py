@@ -431,6 +431,34 @@ class GroupPostService:
             )
         return group_post_comment
 
+    @classmethod
+    async def _find_group_post_reaction(
+        cls,
+        group_id: UUID,
+        post_id: UUID,
+        reaction_id: UUID,
+        session: AsyncSession,
+    ) -> GroupPostReaction:
+
+        group_post_reaction = (
+            await session.exec(
+                select(GroupPostReaction)
+                .join(GroupPostReaction.post)
+                .where(
+                    and_(
+                        GroupPost.group_id == group_id,
+                        GroupPostReaction.post_id == post_id,
+                        GroupPostReaction.id == reaction_id,
+                    )
+                )
+            )
+        ).first()
+        if group_post_reaction is None:
+            raise DoesNotExistException(
+                "Group post reaction with given id does not exist"
+            )
+        return group_post_reaction
+
     # --- --- Posts --- ---
 
     @classmethod
@@ -575,20 +603,9 @@ class GroupPostService:
             request_user=request_user,
             session=session,
         )
-        group_post_comment = (
-            await session.exec(
-                select(GroupPostComment).where(
-                    and_(
-                        GroupPostComment.id == comment_id,
-                        GroupPostComment.post_id == post_id,
-                    )
-                )
-            )
-        ).first()
-        if group_post_comment is None:
-            raise DoesNotExistException(
-                "Group post comment with given id does not exist."
-            )
+        group_post_comment = group_post_comment = await cls._find_group_post_comment(
+            group_id=group_id, post_id=post_id, comment_id=comment_id, session=session
+        )
         return group_post_comment
 
     @classmethod
@@ -675,7 +692,17 @@ class GroupPostService:
         request_user: Union[User, None],
         session: AsyncSession,
     ) -> list[GroupPostReaction]:
-        ...
+        group_post = await cls.filter_get_group_post_by_id(
+            group_id=group_id,
+            post_id=post_id,
+            request_user=request_user,
+            session=session,
+        )
+        return (
+            await session.exec(
+                select(GroupPostReaction).where(GroupPostReaction.post_id == post_id)
+            )
+        ).all()
 
     @classmethod
     async def filter_get_group_post_reaction_by_id(
@@ -686,7 +713,16 @@ class GroupPostService:
         request_user: Union[User, None],
         session: AsyncSession,
     ) -> GroupPostReaction:
-        ...
+        group_post = await cls.filter_get_group_post_by_id(
+            group_id=group_id,
+            post_id=post_id,
+            request_user=request_user,
+            session=session,
+        )
+        group_post_reaction = await cls._find_group_post_reaction(
+            group_id=group_id, post_id=post_id, reaction_id=reaction_id, session=session
+        )
+        return group_post_reaction
 
     @classmethod
     async def create_group_post_reaction(

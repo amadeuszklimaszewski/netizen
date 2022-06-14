@@ -9,6 +9,7 @@ from src.apps.posts.models import (
     CommentInputSchema,
     GroupPost,
     GroupPostComment,
+    GroupPostReaction,
     PostInputSchema,
 )
 from src.apps.posts.services import GroupPostService
@@ -540,6 +541,80 @@ async def test_delete_post_comment_raises_exceptions_with_invalid_ids(
             group_id=public_group_in_db.id,
             post_id=group_post_in_db.id,
             comment_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_group_post_service_correctly_filters_post_reaction_list(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_reaction_in_db: GroupPostReaction,
+    session: AsyncSession,
+):
+    reactions = await GroupPostService.filter_get_group_post_reaction_list(
+        group_id=public_group_in_db.id,
+        post_id=group_post_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert len(reactions) == 1
+    assert reactions[0].post_id == group_post_in_db.id
+    assert reactions[0].user_id == user_in_db.id
+    assert reactions[0].reaction == group_post_reaction_in_db.reaction
+
+
+@pytest.mark.asyncio
+async def test_group_post_service_correctly_filters_post_reaction_by_id(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_reaction_in_db: GroupPostReaction,
+    session: AsyncSession,
+):
+    reaction = await GroupPostService.filter_get_group_post_reaction_by_id(
+        group_id=public_group_in_db.id,
+        post_id=group_post_in_db.id,
+        reaction_id=group_post_reaction_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert reaction.post_id == group_post_in_db.id
+    assert reaction.user_id == user_in_db.id
+    assert reaction.reaction == group_post_reaction_in_db.reaction
+
+
+@pytest.mark.asyncio
+async def test_filter_post_reaction_by_id_raises_exceptions_with_invalid_ids(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_reaction_in_db: GroupPostReaction,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        reaction = await GroupPostService.filter_get_group_post_reaction_by_id(
+            group_id=uuid4(),
+            post_id=group_post_in_db.id,
+            reaction_id=group_post_reaction_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        reaction = await GroupPostService.filter_get_group_post_reaction_by_id(
+            group_id=public_group_in_db.id,
+            post_id=uuid4(),
+            reaction_id=group_post_reaction_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        reaction = await GroupPostService.filter_get_group_post_reaction_by_id(
+            group_id=public_group_in_db.id,
+            post_id=group_post_in_db.id,
+            reaction_id=uuid4(),
             request_user=user_in_db,
             session=session,
         )
