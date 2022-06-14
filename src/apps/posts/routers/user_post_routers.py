@@ -1,9 +1,7 @@
 from uuid import UUID
-from typing import Union
 
 from fastapi import Depends, status
 from fastapi.routing import APIRouter
-from httpcore import request
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.posts.services import UserPostService
 

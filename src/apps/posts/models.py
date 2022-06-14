@@ -1,7 +1,6 @@
-import datetime as dt
 from uuid import UUID
 from typing import Any, TYPE_CHECKING, Optional
-from sqlmodel import Relationship, SQLModel, Field, Column, String, Enum
+from sqlmodel import Relationship, SQLModel, Field, Column, Enum
 from sqlalchemy.orm import relationship, backref
 from src.apps.posts.enums import ReactionEnum
 from src.core.models import TimeStampedUUIDModelBase

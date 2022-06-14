@@ -1,5 +1,5 @@
 from fastapi import status
-from httpx import AsyncClient, Response
+from httpx import AsyncClient
 import pytest
 
 from src.apps.groups.models import Group

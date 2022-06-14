@@ -1,6 +1,5 @@
 from uuid import UUID, uuid4
 import pytest
-from sqlalchemy import and_
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.groups.models import Group

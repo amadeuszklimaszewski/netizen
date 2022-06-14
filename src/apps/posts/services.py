@@ -1,6 +1,6 @@
 from typing import Union
 from uuid import UUID
-from sqlmodel import select, update, and_, or_
+from sqlmodel import select, update, and_
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.groups.models import Group, GroupMembership
 from src.apps.posts.models import (
@@ -16,7 +16,6 @@ from src.apps.posts.models import (
 )
 
 from src.core.exceptions import (
-    AlreadyExistsException,
     PermissionDeniedException,
     DoesNotExistException,
 )
