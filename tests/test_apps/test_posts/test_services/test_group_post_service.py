@@ -665,3 +665,71 @@ async def test_create_post_reaction_raises_exception_with_invalid_post_id(
             request_user=user_in_db,
             session=session,
         )
+
+
+@pytest.mark.asyncio
+async def test_group_post_service_correctly_updates_post_reaction(
+    reaction_update_data: dict[str, str],
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_reaction_in_db: GroupPostReaction,
+    session: AsyncSession,
+):
+    schema = ReactionInputSchema(**reaction_update_data)
+    reaction = await GroupPostService.update_group_post_reaction(
+        schema=schema,
+        group_id=public_group_in_db.id,
+        post_id=group_post_in_db.id,
+        reaction_id=group_post_reaction_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert reaction.user_id == user_in_db.id
+    assert reaction.post_id == group_post_in_db.id
+    assert reaction.reaction == reaction_update_data["reaction"]
+
+    result = (await session.exec(select(GroupPostReaction))).all()
+    assert len(result) == 1
+    assert result[0].user_id == user_in_db.id
+    assert result[0].post_id == group_post_in_db.id
+    assert result[0].reaction == reaction_update_data["reaction"]
+
+
+@pytest.mark.asyncio
+async def test_update_post_reaction_raises_exceptions_with_invalid_ids(
+    reaction_update_data: dict[str, str],
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_reaction_in_db: GroupPostReaction,
+    session: AsyncSession,
+):
+    schema = ReactionInputSchema(**reaction_update_data)
+    with pytest.raises(DoesNotExistException):
+        reaction = await GroupPostService.update_group_post_reaction(
+            schema=schema,
+            group_id=uuid4(),
+            post_id=group_post_in_db.id,
+            reaction_id=group_post_reaction_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        reaction = await GroupPostService.update_group_post_reaction(
+            schema=schema,
+            group_id=public_group_in_db.id,
+            post_id=uuid4(),
+            reaction_id=group_post_reaction_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        reaction = await GroupPostService.update_group_post_reaction(
+            schema=schema,
+            group_id=public_group_in_db.id,
+            post_id=group_post_in_db.id,
+            reaction_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )

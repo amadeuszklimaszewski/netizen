@@ -328,6 +328,7 @@ async def get_group_post_reaction_by_id(
     response_model=ReactionOutputSchema,
 )
 async def update_group_post_reaction(
+    schema: ReactionInputSchema,
     group_id: UUID,
     post_id: UUID,
     reaction_id: UUID,
@@ -335,7 +336,15 @@ async def update_group_post_reaction(
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> ReactionOutputSchema:
-    ...
+    group_post_reaction = await post_service.update_group_post_reaction(
+        schema=schema,
+        group_id=group_id,
+        post_id=post_id,
+        reaction_id=reaction_id,
+        request_user=request_user,
+        session=session,
+    )
+    return ReactionOutputSchema.from_orm(group_post_reaction)
 
 
 @group_post_router.delete(
