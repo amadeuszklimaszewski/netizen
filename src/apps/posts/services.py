@@ -508,7 +508,17 @@ class GroupPostService:
         request_user: Union[User, None],
         session: AsyncSession,
     ) -> list[GroupPostComment]:
-        ...
+        group_post = await cls.filter_get_group_post_by_id(
+            group_id=group_id,
+            post_id=post_id,
+            request_user=request_user,
+            session=session,
+        )
+        return (
+            await session.exec(
+                select(GroupPostComment).where(GroupPostComment.post_id == post_id)
+            )
+        ).all()
 
     @classmethod
     async def filter_get_group_post_comment_by_id(
@@ -519,7 +529,27 @@ class GroupPostService:
         request_user: Union[User, None],
         session: AsyncSession,
     ) -> GroupPostComment:
-        ...
+        group_post = await cls.filter_get_group_post_by_id(
+            group_id=group_id,
+            post_id=post_id,
+            request_user=request_user,
+            session=session,
+        )
+        group_post_comment = (
+            await session.exec(
+                select(GroupPostComment).where(
+                    and_(
+                        GroupPostComment.id == comment_id,
+                        GroupPostComment.post_id == post_id,
+                    )
+                )
+            )
+        ).first()
+        if group_post_comment is None:
+            raise DoesNotExistException(
+                "Group post comment with given id does not exist."
+            )
+        return group_post_comment
 
     @classmethod
     async def create_group_post_comment(

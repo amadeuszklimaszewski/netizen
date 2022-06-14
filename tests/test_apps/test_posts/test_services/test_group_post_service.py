@@ -8,6 +8,7 @@ from src.apps.groups.models import Group
 
 from src.apps.posts.models import (
     GroupPost,
+    GroupPostComment,
     PostInputSchema,
     UserPost,
 )
@@ -301,3 +302,77 @@ async def test_group_post_service_correctly_deletes_post(
 
     result = (await session.exec(select(GroupPost))).all()
     assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_group_post_service_correctly_filters_post_comment_list(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_comment_in_db: GroupPostComment,
+    session: AsyncSession,
+):
+    comments = await GroupPostService.filter_get_group_post_comment_list(
+        group_id=public_group_in_db.id,
+        post_id=group_post_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert len(comments) == 1
+    assert comments[0].post_id == group_post_in_db.id
+    assert comments[0].user_id == user_in_db.id
+    assert comments[0].text == group_post_comment_in_db.text
+
+
+@pytest.mark.asyncio
+async def test_group_post_service_correctly_filters_post_comment_by_id(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_comment_in_db: GroupPostComment,
+    session: AsyncSession,
+):
+    comment = await GroupPostService.filter_get_group_post_comment_by_id(
+        group_id=public_group_in_db.id,
+        post_id=group_post_in_db.id,
+        comment_id=group_post_comment_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert comment.post_id == group_post_in_db.id
+    assert comment.user_id == user_in_db.id
+    assert comment.text == group_post_comment_in_db.text
+
+
+@pytest.mark.asyncio
+async def test_filter_post_comment_by_id_raises_exceptions_with_invalid_ids(
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    group_post_comment_in_db: GroupPostComment,
+    session: AsyncSession,
+):
+    with pytest.raises(DoesNotExistException):
+        comment = await GroupPostService.filter_get_group_post_comment_by_id(
+            group_id=uuid4(),
+            post_id=group_post_in_db.id,
+            comment_id=group_post_comment_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        comment = await GroupPostService.filter_get_group_post_comment_by_id(
+            group_id=public_group_in_db.id,
+            post_id=uuid4(),
+            comment_id=group_post_comment_in_db.id,
+            request_user=user_in_db,
+            session=session,
+        )
+    with pytest.raises(DoesNotExistException):
+        comment = await GroupPostService.filter_get_group_post_comment_by_id(
+            group_id=public_group_in_db.id,
+            post_id=group_post_in_db.id,
+            comment_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )

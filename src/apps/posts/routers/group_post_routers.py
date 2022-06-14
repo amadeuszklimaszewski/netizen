@@ -137,7 +137,17 @@ async def get_group_post_comment_list(
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> list[CommentOutputSchema]:
-    ...
+    return [
+        CommentOutputSchema.from_orm(group_post_comment)
+        for group_post_comment in (
+            await post_service.filter_get_group_post_comment_list(
+                group_id=group_id,
+                post_id=post_id,
+                request_user=request_user,
+                session=session,
+            )
+        )
+    ]
 
 
 @group_post_router.post(
@@ -170,7 +180,14 @@ async def get_group_post_comment_by_id(
     post_service: GroupPostService = Depends(),
     session: AsyncSession = Depends(get_db),
 ) -> CommentOutputSchema:
-    ...
+    group_post_comment = await post_service.filter_get_group_post_comment_by_id(
+        group_id=group_id,
+        post_id=post_id,
+        comment_id=comment_id,
+        request_user=request_user,
+        session=session,
+    )
+    return CommentOutputSchema.from_orm(group_post_comment)
 
 
 @group_post_router.put(
