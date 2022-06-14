@@ -733,7 +733,20 @@ class GroupPostService:
         request_user: User,
         session: AsyncSession,
     ) -> GroupPostReaction:
-        ...
+        await cls._validate_user_access_on_post_put_delete(
+            group_id=group_id, request_user=request_user, session=session
+        )
+        post = await cls._find_group_post(
+            group_id=group_id, post_id=post_id, session=session
+        )
+        group_post_reaction_data = schema.dict()
+        group_post_reaction = GroupPostReaction(
+            **group_post_reaction_data, user_id=request_user.id, post_id=post_id
+        )
+        session.add(group_post_reaction)
+        await session.commit()
+        await session.refresh(group_post_reaction)
+        return group_post_reaction
 
     @classmethod
     async def update_group_post_reaction(

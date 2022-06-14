@@ -483,3 +483,54 @@ async def test_anonymous_user_can_get_group_post_reaction_by_id(
     assert response_body["post_id"] == str(group_post_reaction_in_db.post_id)
     assert response_body["user_id"] == str(group_post_reaction_in_db.user_id)
     assert response_body["reaction"] == group_post_reaction_in_db.reaction
+
+
+@pytest.mark.asyncio
+async def test_user_can_get_create_group_post_reaction(
+    client: AsyncClient,
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    reaction_data: dict[str, str],
+    user_bearer_token_header: dict[str, str],
+):
+    response = await client.post(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/reactions/",
+        json=reaction_data,
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_body = response.json()
+    assert response_body["post_id"] == str(group_post_in_db.id)
+    assert response_body["user_id"] == str(user_in_db.id)
+    assert response_body["reaction"] == reaction_data["reaction"]
+
+
+@pytest.mark.asyncio
+async def test_not_a_member_cannot_get_create_group_post_reaction(
+    client: AsyncClient,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    reaction_data: dict[str, str],
+    other_user_bearer_token_header: dict[str, str],
+):
+    response = await client.post(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/reactions/",
+        json=reaction_data,
+        headers=other_user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_get_create_group_post_reaction(
+    client: AsyncClient,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    reaction_data: dict[str, str],
+):
+    response = await client.post(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/reactions/",
+        json=reaction_data,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
