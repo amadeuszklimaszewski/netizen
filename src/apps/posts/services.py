@@ -338,7 +338,7 @@ class GroupPostService:
         group_id: UUID,
         request_user: User,
         session: AsyncSession,
-    ):
+    ) -> bool:
         group = await get_object_by_id(Table=Group, id=group_id, session=session)
 
         membership = None
@@ -355,7 +355,7 @@ class GroupPostService:
             ).first()
         if not membership and group.status != "PUBLIC":
             raise PermissionDeniedException("User unauthorized.")
-        return
+        return True
 
     @classmethod
     async def _validate_user_access_on_post_put_delete(
@@ -363,7 +363,7 @@ class GroupPostService:
         group_id: UUID,
         request_user: User,
         session: AsyncSession,
-    ):
+    ) -> bool:
         group = await get_object_by_id(Table=Group, id=group_id, session=session)
 
         membership = None
@@ -380,7 +380,56 @@ class GroupPostService:
             ).first()
         if not membership:
             raise PermissionDeniedException("User unauthorized.")
-        return
+        return True
+
+    @classmethod
+    async def _find_group_post(
+        cls,
+        group_id: UUID,
+        post_id: UUID,
+        session: AsyncSession,
+    ) -> GroupPost:
+        group_post = (
+            await session.exec(
+                select(GroupPost).where(
+                    and_(
+                        GroupPost.group_id == group_id,
+                        GroupPost.id == post_id,
+                    )
+                )
+            )
+        ).first()
+        if group_post is None:
+            raise DoesNotExistException("Group post with given id does not exist.")
+        return group_post
+
+    @classmethod
+    async def _find_group_post_comment(
+        cls,
+        group_id: UUID,
+        post_id: UUID,
+        comment_id: UUID,
+        session: AsyncSession,
+    ) -> GroupPostComment:
+
+        group_post_comment = (
+            await session.exec(
+                select(GroupPostComment)
+                .join(GroupPostComment.post)
+                .where(
+                    and_(
+                        GroupPost.group_id == group_id,
+                        GroupPostComment.post_id == post_id,
+                        GroupPostComment.id == comment_id,
+                    )
+                )
+            )
+        ).first()
+        if group_post_comment is None:
+            raise DoesNotExistException(
+                "Group post comment with given id does not exist"
+            )
+        return group_post_comment
 
     # --- --- Posts --- ---
 
@@ -410,18 +459,11 @@ class GroupPostService:
         await cls._validate_user_access_on_get(
             group_id=group_id, request_user=request_user, session=session
         )
-        group_post = (
-            await session.exec(
-                select(GroupPost).where(
-                    and_(
-                        GroupPost.group_id == group_id,
-                        GroupPost.id == post_id,
-                    )
-                )
-            )
-        ).first()
-        if group_post is None:
-            raise DoesNotExistException("Group post with given id does not exist.")
+        group_post = await cls._find_group_post(
+            group_id=group_id,
+            post_id=post_id,
+            session=session,
+        )
         return group_post
 
     @classmethod
@@ -456,10 +498,9 @@ class GroupPostService:
         await cls._validate_user_access_on_post_put_delete(
             group_id=group_id, request_user=request_user, session=session
         )
-        group_post = await cls.filter_get_group_post_by_id(
+        group_post = await cls._find_group_post(
             group_id=group_id,
             post_id=post_id,
-            request_user=request_user,
             session=session,
         )
         if request_user.id != group_post.user_id:
@@ -485,10 +526,9 @@ class GroupPostService:
         await cls._validate_user_access_on_post_put_delete(
             group_id=group_id, request_user=request_user, session=session
         )
-        group_post = await cls.filter_get_group_post_by_id(
+        group_post = await cls._find_group_post(
             group_id=group_id,
             post_id=post_id,
-            request_user=request_user,
             session=session,
         )
         if request_user.id != group_post.user_id:
@@ -560,7 +600,20 @@ class GroupPostService:
         request_user: User,
         session: AsyncSession,
     ) -> GroupPostComment:
-        ...
+        await cls._validate_user_access_on_post_put_delete(
+            group_id=group_id, request_user=request_user, session=session
+        )
+        post = await cls._find_group_post(
+            group_id=group_id, post_id=post_id, session=session
+        )
+        group_post_comment_data = schema.dict()
+        group_post_comment = GroupPostComment(
+            **group_post_comment_data, user_id=request_user.id, post_id=post_id
+        )
+        session.add(group_post_comment)
+        await session.commit()
+        await session.refresh(group_post_comment)
+        return group_post_comment
 
     @classmethod
     async def update_group_post_comment(

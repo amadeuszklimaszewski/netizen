@@ -1,16 +1,15 @@
 from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import and_
-from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.groups.models import Group
 
 from src.apps.posts.models import (
+    CommentInputSchema,
     GroupPost,
     GroupPostComment,
     PostInputSchema,
-    UserPost,
 )
 from src.apps.posts.services import GroupPostService
 from src.apps.users.models import User
@@ -179,7 +178,7 @@ async def test_filter_group_post_by_id_raises_exception_with_wrong_ids(
 
 
 @pytest.mark.asyncio
-async def test_user_post_service_correctly_creates_post(
+async def test_group_post_service_correctly_creates_post(
     post_data: dict[str, str],
     user_in_db: User,
     public_group_in_db: Group,
@@ -373,6 +372,52 @@ async def test_filter_post_comment_by_id_raises_exceptions_with_invalid_ids(
             group_id=public_group_in_db.id,
             post_id=group_post_in_db.id,
             comment_id=uuid4(),
+            request_user=user_in_db,
+            session=session,
+        )
+
+
+@pytest.mark.asyncio
+async def test_group_post_service_correctly_creates_post_comment(
+    comment_data: dict[str, str],
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    session: AsyncSession,
+):
+    schema = CommentInputSchema(**comment_data)
+    comment = await GroupPostService.create_group_post_comment(
+        schema=schema,
+        group_id=public_group_in_db.id,
+        post_id=group_post_in_db.id,
+        request_user=user_in_db,
+        session=session,
+    )
+    assert comment.user_id == user_in_db.id
+    assert comment.post_id == group_post_in_db.id
+    assert comment.text == comment_data["text"]
+
+    result = (await session.exec(select(GroupPostComment))).all()
+    assert len(result) == 1
+    assert result[0].user_id == user_in_db.id
+    assert result[0].post_id == group_post_in_db.id
+    assert result[0].text == comment_data["text"]
+
+
+@pytest.mark.asyncio
+async def test_create_post_comment_raises_exception_with_invalid_post_id(
+    comment_data: dict[str, str],
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    session: AsyncSession,
+):
+    schema = CommentInputSchema(**comment_data)
+    with pytest.raises(DoesNotExistException):
+        comment = await GroupPostService.create_group_post_comment(
+            schema=schema,
+            group_id=public_group_in_db.id,
+            post_id=uuid4(),
             request_user=user_in_db,
             session=session,
         )

@@ -290,3 +290,54 @@ async def test_anonymous_user_can_get_group_post_comment_by_id(
     assert response_body["post_id"] == str(group_post_comment_in_db.post_id)
     assert response_body["user_id"] == str(group_post_comment_in_db.user_id)
     assert response_body["text"] == group_post_comment_in_db.text
+
+
+@pytest.mark.asyncio
+async def test_user_can_get_create_group_post_comment(
+    client: AsyncClient,
+    user_in_db: User,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    comment_data: dict[str, str],
+    user_bearer_token_header: dict[str, str],
+):
+    response = await client.post(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/comments/",
+        json=comment_data,
+        headers=user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    response_body = response.json()
+    assert response_body["post_id"] == str(group_post_in_db.id)
+    assert response_body["user_id"] == str(user_in_db.id)
+    assert response_body["text"] == comment_data["text"]
+
+
+@pytest.mark.asyncio
+async def test_not_a_member_cannot_get_create_group_post_comment(
+    client: AsyncClient,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    comment_data: dict[str, str],
+    other_user_bearer_token_header: dict[str, str],
+):
+    response = await client.post(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/comments/",
+        json=comment_data,
+        headers=other_user_bearer_token_header,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.asyncio
+async def test_anonymous_user_cannot_get_create_group_post_comment(
+    client: AsyncClient,
+    public_group_in_db: Group,
+    group_post_in_db: GroupPost,
+    comment_data: dict[str, str],
+):
+    response = await client.post(
+        f"/groups/{public_group_in_db.id}/posts/{group_post_in_db.id}/comments/",
+        json=comment_data,
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
