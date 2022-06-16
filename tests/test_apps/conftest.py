@@ -42,7 +42,10 @@ async def user_in_db(
     user_register_data: dict[str, str], session: AsyncSession
 ) -> UserOutputSchema:
     schema = RegisterSchema(**user_register_data)
-    return await UserService.register_user(schema=schema, session=session)
+    user = await UserService.register_user(schema=schema, session=session)
+    await UserService.activate_account(email=user.email, session=session)
+    await session.refresh(user)
+    return user
 
 
 @pytest.fixture
@@ -69,7 +72,10 @@ async def other_user_in_db(
     other_user_register_data: dict[str, str], session: AsyncSession
 ) -> UserOutputSchema:
     schema = RegisterSchema(**other_user_register_data)
-    return await UserService.register_user(schema=schema, session=session)
+    user = await UserService.register_user(schema=schema, session=session)
+    await UserService.activate_account(email=user.email, session=session)
+    await session.refresh(user)
+    return user
 
 
 @pytest.fixture

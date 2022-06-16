@@ -40,3 +40,7 @@ class PermissionDeniedException(AuthException):
 
 class InvalidConfirmationTokenException(AuthException):
     pass
+
+
+class UserNotActiveException(AuthException):
+    pass

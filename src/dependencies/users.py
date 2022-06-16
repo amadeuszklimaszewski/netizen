@@ -5,7 +5,7 @@ from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import MissingTokenError, InvalidHeaderError
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.core.exceptions import InvalidCredentialsException
+from src.core.exceptions import InvalidCredentialsException, UserNotActiveException
 from src.apps.users.models import User
 from src.core.utils import get_object_by_id
 from src.database.connection import get_db
@@ -20,7 +20,8 @@ async def authenticate_user(
 
     if user is None:
         raise InvalidCredentialsException("Invalid credentials provided.")
-
+    if not user.is_active:
+        raise UserNotActiveException("Account not activated. Please check your email.")
     return user
 
 
