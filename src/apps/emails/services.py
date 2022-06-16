@@ -1,9 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from uuid import uuid4
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 from jinja2 import Template
 from pydantic import BaseModel
-from fastapi_another_jwt_auth import AuthJWT
 from src.apps.emails.schemas import AccountConfirmationEmailBodySchema, EmailSchema
 from src.settings import EmailSettings, settings
 

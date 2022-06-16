@@ -21,7 +21,6 @@ from src.core.exceptions import (
     AlreadyActivatedAccountException,
 )
 from src.core.utils import get_object_by_id
-from src.settings import settings
 
 
 class UserService:

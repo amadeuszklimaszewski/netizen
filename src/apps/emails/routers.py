@@ -1,16 +1,10 @@
-from uuid import UUID
 import json
 from fastapi import APIRouter, Depends, status
 from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
-from jwt import InvalidTokenError
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.apps.users.models import User
 from src.apps.users.services import UserService
 from src.core.exceptions import (
-    AlreadyActivatedAccountException,
-    DoesNotExistException,
     InvalidConfirmationTokenException,
 )
 from src.database.connection import get_db
