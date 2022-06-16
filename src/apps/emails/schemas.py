@@ -9,3 +9,7 @@ class EmailSchema(BaseModel):
 
 class AccountConfirmationEmailBodySchema(BaseModel):
     token: str
+
+
+class EmailToken(BaseModel):
+    email: str

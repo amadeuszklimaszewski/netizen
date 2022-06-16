@@ -5,10 +5,11 @@ from fastapi_another_jwt_auth import AuthJWT
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from src.apps.emails.services import EmailService
 
+from src.settings import settings
 from src.apps.users.models import (
     FriendOutputSchema,
-    FriendRequest,
     FriendRequestOutputSchema,
     FriendRequestUpdateSchema,
     User,
@@ -18,6 +19,7 @@ from src.apps.users.models import (
 )
 from src.apps.users.services import FriendService, UserService
 from src.apps.jwt.schemas import TokenSchema
+from src.apps.emails.schemas import EmailToken
 from src.core.utils import get_object_by_id
 from src.database.connection import get_db
 from src.dependencies.users import authenticate_user
@@ -37,13 +39,22 @@ user_router.include_router(user_post_router)
 async def register_user(
     user_register_schema: RegisterSchema,
     background_tasks: BackgroundTasks,
+    auth_jwt: AuthJWT = Depends(),
     user_service: UserService = Depends(),
+    email_service: EmailService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
     user = await user_service.register_user(user_register_schema, session=session)
     user_schema = User.from_orm(user)
+
     email = user_schema.email
-    background_tasks.add_task(user_service.send_activation_email, email)
+    token = auth_jwt.create_access_token(
+        subject=EmailToken(email=user_schema.email).json()
+    )
+    background_tasks.add_task(
+        email_service.send_activation_email, email, token, settings.get_email_backend
+    )
+
     return user_schema
 
 

@@ -12,3 +12,9 @@ class EmailSettings(BaseSettings):
     MAIL_SSL: bool = False
     USE_CREDENTIALS: bool = True
     VALIDATE_CERTS: bool = True
+
+    @property
+    def get_email_backend(self):
+        from src.apps.emails.services import FastAPIMailBackend, ConsoleEmailBackend
+
+        return ConsoleEmailBackend

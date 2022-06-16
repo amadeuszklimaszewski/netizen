@@ -6,6 +6,7 @@ from fastapi_another_jwt_auth.exceptions import AuthJWTException
 from src.apps.users.routers import user_router
 from src.apps.jwt.routers import jwt_router
 from src.apps.groups.routers import group_router
+from src.apps.emails.routers import email_router
 from src.core.exceptions import (
     APIException,
     DoesNotExistException,
@@ -23,7 +24,7 @@ app = FastAPI(
 
 # ----- Routing -----
 
-
+app.include_router(email_router)
 router = APIRouter(prefix="/api/v1")
 
 router.include_router(user_router)

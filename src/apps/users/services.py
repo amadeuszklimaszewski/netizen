@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlmodel import select, and_, or_, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.apps.emails.services import EmailService
 from src.apps.users.models import (
     Friend,
     FriendRequest,
@@ -17,11 +18,15 @@ from src.core.exceptions import (
     FriendRequestAlreadyHandled,
     InvalidCredentialsException,
     PermissionDeniedException,
+    AlreadyActivatedAccountException,
 )
 from src.core.utils import get_object_by_id
+from src.settings import settings
 
 
 class UserService:
+    email_service_class = EmailService
+
     @classmethod
     async def _hash_password(cls, password: str) -> str:
         return pwd_context.hash(password)
@@ -61,8 +66,22 @@ class UserService:
         return user
 
     @classmethod
-    def send_activation_email(cls, email: str):
-        ...
+    async def activate_account(
+        cls,
+        email: str,
+        session: AsyncSession,
+    ) -> None:
+        user: User = (
+            await session.exec(select(User).where(User.email == email))
+        ).first()
+        if user is None:
+            raise DoesNotExistException("Invalid token")
+        if user.is_active:
+            raise AlreadyActivatedAccountException("User already activated his account")
+        await session.execute(
+            update(User).where(User.email == email).values(is_active=True)
+        )
+        await session.commit()
 
 
 class FriendService:

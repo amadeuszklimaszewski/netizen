@@ -26,7 +26,7 @@ class UserOutputSchema(TimeStampedUUIDModelBase, UserBase):
 
 class User(TimeStampedUUIDModelBase, UserBase, table=True):
     hashed_password: str
-    is_active: bool = True
+    is_active: bool = False
 
     membership_requests: list["GroupRequest"] = Relationship(
         sa_relationship=relationship(

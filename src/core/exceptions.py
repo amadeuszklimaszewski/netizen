@@ -22,6 +22,10 @@ class GroupRequestAlreadyHandled(APIException):
     pass
 
 
+class AlreadyActivatedAccountException(APIException):
+    pass
+
+
 class AuthException(APIException):
     pass
 
@@ -31,4 +35,8 @@ class InvalidCredentialsException(AuthException):
 
 
 class PermissionDeniedException(AuthException):
+    pass
+
+
+class InvalidConfirmationTokenException(AuthException):
     pass
