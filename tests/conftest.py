@@ -43,7 +43,7 @@ async def async_engine() -> AsyncEngine:
 
 
 @pytest_asyncio.fixture
-async def session(async_engine):
+async def session(async_engine: AsyncEngine) -> AsyncSession:
     async with async_engine.connect() as conn:
         await conn.begin()
         await conn.begin_nested()
@@ -64,7 +64,7 @@ async def session(async_engine):
 
 
 @pytest.fixture()
-def client(session):
+def client(session) -> AsyncClient:
     def override_get_db():
         yield session
 
