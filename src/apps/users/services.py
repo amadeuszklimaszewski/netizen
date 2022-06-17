@@ -7,9 +7,11 @@ from src.apps.emails.services import EmailService
 from src.apps.users.models import (
     Friend,
     FriendRequest,
-    FriendRequestUpdateSchema,
     User,
+)
+from src.apps.users.schemas import (
     RegisterSchema,
+    FriendRequestUpdateSchema,
 )
 from src.apps.users.utils import pwd_context
 from src.core.exceptions import (

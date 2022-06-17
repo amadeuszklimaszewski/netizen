@@ -16,10 +16,11 @@ from src.apps.users.models import (
     Friend,
     FriendRequest,
     User,
+)
+from src.apps.users.schemas import (
     UserOutputSchema,
     RegisterSchema,
 )
-
 
 # Users
 

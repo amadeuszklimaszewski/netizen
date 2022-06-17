@@ -2,7 +2,7 @@ import datetime as dt
 from uuid import UUID
 from dateutil.relativedelta import relativedelta
 from typing import Any, TYPE_CHECKING, Optional
-from pydantic import validator, validate_email as validate_email_pd
+from pydantic import BaseModel, validator, validate_email as validate_email_pd
 from sqlmodel import Relationship, SQLModel, Field, Column, String, Enum
 from sqlalchemy.orm import relationship
 from src.apps.users.enums import FriendRequestStatus
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from src.apps.groups.models import GroupRequest, GroupMembership
 
 
-class UserBase(SQLModel):
+class UserBase(TimeStampedUUIDModelBase):
     username: str = Field(sa_column=Column("username", String, unique=True))
     email: str = Field(sa_column=Column("email", String, unique=True))
     first_name: str
@@ -20,11 +20,7 @@ class UserBase(SQLModel):
     birthday: dt.date
 
 
-class UserOutputSchema(TimeStampedUUIDModelBase, UserBase):
-    is_active: bool
-
-
-class User(TimeStampedUUIDModelBase, UserBase, table=True):
+class User(UserBase, table=True):
     hashed_password: str
     is_active: bool = False
 
@@ -70,33 +66,6 @@ class User(TimeStampedUUIDModelBase, UserBase, table=True):
     )
 
 
-class LoginSchema(SQLModel):
-    email: str
-    password: str
-
-
-class RegisterSchema(UserBase):
-    password: str = Field(..., min_length=8)
-    password2: str = Field(..., min_length=8)
-
-    @validator("birthday")
-    def validate_birthday(cls, birthday: dt.datetime) -> dt.datetime:
-        if relativedelta(dt.date.today(), birthday).years <= 18:
-            raise ValueError("You must be at least 18 years old")
-        return birthday
-
-    @validator("email")
-    def validate_email(cls, email: str) -> str:
-        validate_email_pd(email)
-        return email
-
-    @validator("password2")
-    def validate_password(cls, password2: str, values: dict[str, Any]) -> str:
-        if password2 != values["password"]:
-            raise ValueError("Passwords do not match")
-        return password2
-
-
 class Friend(TimeStampedUUIDModelBase, table=True):
     user_id: UUID = Field(foreign_key="user.id")
     friend_user_id: UUID = Field(foreign_key="user.id")
@@ -108,11 +77,6 @@ class Friend(TimeStampedUUIDModelBase, table=True):
             primaryjoin="Friend.user_id == User.id",
         )
     )
-
-
-class FriendOutputSchema(TimeStampedUUIDModelBase):
-    user_id: UUID
-    friend_user_id: UUID
 
 
 class FriendRequest(TimeStampedUUIDModelBase, table=True):
@@ -138,13 +102,3 @@ class FriendRequest(TimeStampedUUIDModelBase, table=True):
             primaryjoin="FriendRequest.to_user_id == User.id",
         )
     )
-
-
-class FriendRequestOutputSchema(TimeStampedUUIDModelBase):
-    from_user_id: UUID
-    to_user_id: UUID
-    status: FriendRequestStatus
-
-
-class FriendRequestUpdateSchema(SQLModel):
-    status: FriendRequestStatus

@@ -3,7 +3,12 @@ import pytest
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.apps.users.models import User, Friend, FriendRequest, FriendRequestUpdateSchema
+from src.apps.users.models import (
+    User,
+    Friend,
+    FriendRequest,
+)
+from src.apps.users.schemas import FriendRequestUpdateSchema
 from src.apps.users.services import FriendService
 from src.apps.users.models import User
 from src.core.exceptions import (

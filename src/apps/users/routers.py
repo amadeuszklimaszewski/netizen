@@ -3,28 +3,27 @@ from fastapi import BackgroundTasks, Depends, status
 from fastapi.routing import APIRouter
 from fastapi_another_jwt_auth import AuthJWT
 
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from src.apps.emails.services import EmailService
 
 from src.settings import settings
-from src.apps.users.models import (
+from src.database.connection import get_db
+from src.dependencies.users import authenticate_user
+from src.apps.users.models import User
+from src.apps.users.schemas import (
+    LoginSchema,
+    RegisterSchema,
+    UserOutputSchema,
     FriendOutputSchema,
     FriendRequestOutputSchema,
     FriendRequestUpdateSchema,
-    User,
-    UserOutputSchema,
-    LoginSchema,
-    RegisterSchema,
 )
 from src.apps.users.services import FriendService, UserService
 from src.apps.jwt.schemas import TokenOutputSchema
 from src.apps.emails.schemas import EmailToken
-from src.core.utils import get_object_by_id
-from src.database.connection import get_db
-from src.dependencies.users import authenticate_user
+from src.apps.emails.services import EmailService
 
 from src.apps.posts.routers import user_post_router
+
 
 user_router = APIRouter(prefix="/users")
 user_router.include_router(user_post_router)
@@ -71,7 +70,7 @@ async def login_user(
     session: AsyncSession = Depends(get_db),
 ) -> TokenOutputSchema:
     user = await user_service.authenticate(**user_login_schema.dict(), session=session)
-    user_schema = User.from_orm(user)
+    user_schema = UserOutputSchema.from_orm(user)
     access_token = auth_jwt.create_access_token(subject=user_schema.json())
 
     return TokenOutputSchema(access_token=access_token)
@@ -119,7 +118,7 @@ async def get_user(
     session: AsyncSession = Depends(get_db),
 ) -> UserOutputSchema:
     user = await user_service.get_user_by_id(user_id=user_id, session=session)
-    return User.from_orm(user)
+    return UserOutputSchema.from_orm(user)
 
 
 @user_router.get(
