@@ -9,15 +9,15 @@ from src.apps.posts.services import GroupPostService
 from src.database.connection import get_db
 from src.apps.users.models import User
 from src.dependencies.users import authenticate_user, get_user_or_none
-from src.apps.posts.models import (
-    GroupPostOutputSchema,
+from src.apps.posts.schemas import (
     PostInputSchema,
-    PostOutputSchema,
+    GroupPostOutputSchema,
     CommentInputSchema,
     CommentOutputSchema,
     ReactionInputSchema,
     ReactionOutputSchema,
 )
+
 
 group_post_router = APIRouter()
 

@@ -1,6 +1,6 @@
 from uuid import UUID
 from typing import Any, TYPE_CHECKING, Optional
-from sqlmodel import Relationship, SQLModel, Field, Column, Enum
+from sqlmodel import Relationship, Field, Column, Enum
 from sqlalchemy.orm import relationship, backref
 from src.apps.posts.enums import ReactionEnum
 from src.core.models import TimeStampedUUIDModelBase
@@ -8,8 +8,6 @@ from src.core.models import TimeStampedUUIDModelBase
 if TYPE_CHECKING:
     from src.apps.users.models import User
     from src.apps.groups.models import Group
-
-# --- --- Posts --- ---
 
 
 class UserPost(TimeStampedUUIDModelBase, table=True):
@@ -22,11 +20,6 @@ class UserPost(TimeStampedUUIDModelBase, table=True):
             "User", backref=backref("user_posts", cascade="all, delete")
         )
     )
-
-
-class PostOutputSchema(TimeStampedUUIDModelBase):
-    text: str
-    user_id: UUID
 
 
 class GroupPost(TimeStampedUUIDModelBase, table=True):
@@ -45,17 +38,6 @@ class GroupPost(TimeStampedUUIDModelBase, table=True):
             "User", backref=backref("group_posts", cascade="all, delete")
         )
     )
-
-
-class GroupPostOutputSchema(PostOutputSchema):
-    group_id: UUID
-
-
-class PostInputSchema(SQLModel):
-    text: str
-
-
-# --- --- Comments --- ---
 
 
 class UserPostComment(TimeStampedUUIDModelBase, table=True):
@@ -94,19 +76,6 @@ class GroupPostComment(TimeStampedUUIDModelBase, table=True):
     )
 
 
-class CommentInputSchema(SQLModel):
-    text: str
-
-
-class CommentOutputSchema(TimeStampedUUIDModelBase):
-    text: str
-    post_id: UUID
-    user_id: UUID
-
-
-# --- --- Reactions --- ---
-
-
 class UserPostReaction(TimeStampedUUIDModelBase, table=True):
     post_id: UUID = Field(foreign_key="userpost.id")
     user_id: UUID = Field(foreign_key="user.id")
@@ -139,13 +108,3 @@ class GroupPostReaction(TimeStampedUUIDModelBase, table=True):
             "User", backref=backref("group_post_reactions", cascade="all, delete")
         )
     )
-
-
-class ReactionInputSchema(SQLModel):
-    reaction: ReactionEnum
-
-
-class ReactionOutputSchema(TimeStampedUUIDModelBase):
-    reaction: ReactionEnum
-    post_id: UUID
-    user_id: UUID

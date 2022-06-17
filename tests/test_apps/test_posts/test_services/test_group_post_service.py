@@ -5,11 +5,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.groups.models import Group
 
 from src.apps.posts.models import (
-    CommentInputSchema,
     GroupPost,
     GroupPostComment,
     GroupPostReaction,
+)
+from src.apps.posts.schemas import (
     PostInputSchema,
+    CommentInputSchema,
     ReactionInputSchema,
 )
 from src.apps.posts.services import GroupPostService

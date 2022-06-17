@@ -8,7 +8,7 @@ from src.apps.posts.services import UserPostService
 from src.database.connection import get_db
 from src.apps.users.models import User
 from src.dependencies.users import authenticate_user
-from src.apps.posts.models import (
+from src.apps.posts.schemas import (
     PostInputSchema,
     PostOutputSchema,
     CommentInputSchema,

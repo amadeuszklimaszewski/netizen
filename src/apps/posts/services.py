@@ -4,17 +4,18 @@ from sqlmodel import select, update, and_
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.groups.models import Group, GroupMembership
 from src.apps.posts.models import (
-    CommentInputSchema,
     GroupPost,
     GroupPostComment,
     GroupPostReaction,
-    PostInputSchema,
-    ReactionInputSchema,
     UserPost,
     UserPostComment,
     UserPostReaction,
 )
-
+from src.apps.posts.schemas import (
+    PostInputSchema,
+    CommentInputSchema,
+    ReactionInputSchema,
+)
 from src.core.exceptions import (
     PermissionDeniedException,
     DoesNotExistException,
