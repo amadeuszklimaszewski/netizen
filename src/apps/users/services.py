@@ -82,6 +82,21 @@ class UserService:
         )
         await session.commit()
 
+    @classmethod
+    async def get_user_list(
+        cls,
+        session: AsyncSession,
+    ) -> list[User]:
+        return (await session.exec(select(User))).all()
+
+    @classmethod
+    async def get_user_by_id(
+        cls,
+        user_id: UUID,
+        session: AsyncSession,
+    ):
+        return await get_object_by_id(Table=User, id=user_id, session=session)
+
 
 class FriendService:
     @classmethod

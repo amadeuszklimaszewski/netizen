@@ -84,10 +84,13 @@ async def login_user(
     status_code=status.HTTP_200_OK,
     response_model=list[UserOutputSchema],
 )
-async def get_users(session: AsyncSession = Depends(get_db)) -> list[UserOutputSchema]:
+async def get_users(
+    user_service: UserService = Depends(),
+    session: AsyncSession = Depends(get_db),
+) -> list[UserOutputSchema]:
     return [
         UserOutputSchema.from_orm(user)
-        for user in (await session.exec(select(User))).all()
+        for user in (await user_service.get_user_list(session=session))
     ]
 
 
@@ -111,9 +114,11 @@ async def get_logged_user(
     response_model=UserOutputSchema,
 )
 async def get_user(
-    user_id: UUID, session: AsyncSession = Depends(get_db)
+    user_id: UUID,
+    user_service: UserService = Depends(),
+    session: AsyncSession = Depends(get_db),
 ) -> UserOutputSchema:
-    user = await get_object_by_id(Table=User, id=user_id, session=session)
+    user = await user_service.get_user_by_id(user_id=user_id, session=session)
     return User.from_orm(user)
 
 
