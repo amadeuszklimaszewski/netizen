@@ -74,13 +74,13 @@ async def delete_user_group_request(
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
-) -> GroupRequestOutputSchema:
+) -> None:
     await group_service.delete_user_group_request(
         request_id=request_id,
         request_user=request_user,
         session=session,
     )
-    return {}
+    return
 
 
 @group_router.get(
@@ -167,11 +167,11 @@ async def delete_group(
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     await group_service.delete_group(
         group_id=group_id, user=request_user, session=session
     )
-    return {}
+    return
 
 
 @group_router.delete(
@@ -184,11 +184,11 @@ async def leave_group(
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     await group_service.delete_membership_by_user_id(
         group_id=group_id, user=request_user, session=session
     )
-    return {}
+    return
 
 
 @group_router.post(
@@ -354,11 +354,11 @@ async def delete_group_member(
     group_service: GroupService = Depends(),
     request_user: User = Depends(authenticate_user),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     await group_service.delete_membership_by_id(
         group_id=group_id,
         membership_id=membership_id,
         request_user=request_user,
         session=session,
     )
-    return {}
+    return

@@ -18,7 +18,7 @@ from src.apps.users.models import (
     RegisterSchema,
 )
 from src.apps.users.services import FriendService, UserService
-from src.apps.jwt.schemas import TokenSchema
+from src.apps.jwt.schemas import TokenOutputSchema
 from src.apps.emails.schemas import EmailToken
 from src.core.utils import get_object_by_id
 from src.database.connection import get_db
@@ -43,38 +43,38 @@ async def register_user(
     user_service: UserService = Depends(),
     email_service: EmailService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> UserOutputSchema:
     user = await user_service.register_user(user_register_schema, session=session)
-    user_schema = User.from_orm(user)
 
-    email = user_schema.email
-    token = auth_jwt.create_access_token(
-        subject=EmailToken(email=user_schema.email).json()
-    )
+    user_email = user.email
+    token = auth_jwt.create_access_token(subject=EmailToken(email=user_email).json())
     background_tasks.add_task(
-        email_service.send_activation_email, email, token, settings.get_email_backend
+        email_service.send_activation_email,
+        user_email,
+        token,
+        settings.get_email_backend,
     )
 
-    return user_schema
+    return UserOutputSchema.from_orm(user)
 
 
 @user_router.post(
     "/login/",
     tags=["users"],
     status_code=status.HTTP_200_OK,
-    response_model=TokenSchema,
+    response_model=TokenOutputSchema,
 )
 async def login_user(
     user_login_schema: LoginSchema,
     auth_jwt: AuthJWT = Depends(),
     user_service: UserService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> TokenOutputSchema:
     user = await user_service.authenticate(**user_login_schema.dict(), session=session)
     user_schema = User.from_orm(user)
     access_token = auth_jwt.create_access_token(subject=user_schema.json())
 
-    return TokenSchema(access_token=access_token)
+    return TokenOutputSchema(access_token=access_token)
 
 
 @user_router.get(
@@ -85,8 +85,10 @@ async def login_user(
     response_model=list[UserOutputSchema],
 )
 async def get_users(session: AsyncSession = Depends(get_db)) -> list[UserOutputSchema]:
-    users = (await session.exec(select(User))).all()
-    return [UserOutputSchema.from_orm(user) for user in users]
+    return [
+        UserOutputSchema.from_orm(user)
+        for user in (await session.exec(select(User))).all()
+    ]
 
 
 @user_router.get(
@@ -164,11 +166,11 @@ async def remove_friend(
     request_user: User = Depends(authenticate_user),
     friend_service: FriendService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     await friend_service.delete_friend(
         friend_id=friend_id, request_user=request_user, session=session
     )
-    return {}
+    return
 
 
 @user_router.post(
@@ -199,11 +201,11 @@ async def remove_friend(
     request_user: User = Depends(authenticate_user),
     friend_service: FriendService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     await friend_service.delete_friend(
         friend_id=user_id, request_user=request_user, session=session
     )
-    return {}
+    return
 
 
 @user_router.get(
@@ -277,11 +279,11 @@ async def delete_friend_request(
     request_user: User = Depends(authenticate_user),
     friend_service: FriendService = Depends(),
     session: AsyncSession = Depends(get_db),
-):
+) -> None:
     await friend_service.delete_friend_request(
         friend_request_id=friend_request_id, request_user=request_user, session=session
     )
-    return {}
+    return
 
 
 @user_router.get(

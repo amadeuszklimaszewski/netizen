@@ -1,5 +1,5 @@
 from pydantic import BaseModel
 
 
-class TokenSchema(BaseModel):
+class TokenOutputSchema(BaseModel):
     access_token: str
