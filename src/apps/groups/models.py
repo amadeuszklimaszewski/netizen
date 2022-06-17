@@ -1,6 +1,6 @@
 from uuid import UUID
 from typing import TYPE_CHECKING, Optional
-from sqlmodel import Field, SQLModel, Relationship, Column, String
+from sqlmodel import Field, Relationship, Column, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import Enum
 from src.core.models import TimeStampedUUIDModelBase
@@ -31,16 +31,6 @@ class GroupRequest(TimeStampedUUIDModelBase, table=True):
     )
 
 
-class GroupRequestOutputSchema(TimeStampedUUIDModelBase):
-    group_id: UUID
-    user_id: UUID
-    status: GroupRequestStatus
-
-
-class GroupRequestUpdateSchema(SQLModel):
-    status: GroupRequestStatus
-
-
 class GroupMembership(TimeStampedUUIDModelBase, table=True):
     group_id: UUID = Field(foreign_key="group.id", primary_key=True)
     user_id: UUID = Field(foreign_key="user.id", primary_key=True)
@@ -57,16 +47,6 @@ class GroupMembership(TimeStampedUUIDModelBase, table=True):
     user: Optional["User"] = Relationship(
         sa_relationship=relationship("User", back_populates="memberships")
     )
-
-
-class GroupMembershipOutputSchema(TimeStampedUUIDModelBase):
-    group_id: UUID
-    user_id: UUID
-    membership_status: GroupMemberStatus
-
-
-class GroupMembershipUpdateSchema(SQLModel):
-    membership_status: GroupMemberStatus
 
 
 class Group(TimeStampedUUIDModelBase, table=True):
@@ -88,15 +68,3 @@ class Group(TimeStampedUUIDModelBase, table=True):
             back_populates="group",
         )
     )
-
-
-class GroupOutputSchema(TimeStampedUUIDModelBase):
-    name: str
-    description: str
-    status: GroupStatus
-
-
-class GroupInputSchema(SQLModel):
-    name: str = Field(min_length=5)
-    description: str
-    status: GroupStatus

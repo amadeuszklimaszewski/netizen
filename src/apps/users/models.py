@@ -1,9 +1,7 @@
 import datetime as dt
 from uuid import UUID
-from dateutil.relativedelta import relativedelta
 from typing import Any, TYPE_CHECKING, Optional
-from pydantic import BaseModel, validator, validate_email as validate_email_pd
-from sqlmodel import Relationship, SQLModel, Field, Column, String, Enum
+from sqlmodel import Relationship, Field, Column, String, Enum
 from sqlalchemy.orm import relationship
 from src.apps.users.enums import FriendRequestStatus
 from src.core.models import TimeStampedUUIDModelBase

@@ -6,10 +6,12 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.groups.models import (
     Group,
-    GroupInputSchema,
     GroupMembership,
-    GroupMembershipUpdateSchema,
     GroupRequest,
+)
+from src.apps.groups.schemas import (
+    GroupInputSchema,
+    GroupMembershipUpdateSchema,
     GroupRequestUpdateSchema,
 )
 from src.apps.groups.services import GroupService

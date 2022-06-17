@@ -8,7 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.database.connection import get_db
 from src.apps.users.models import User
 from src.dependencies.users import authenticate_user, get_user_or_none
-from src.apps.groups.models import (
+from src.apps.groups.schemas import (
     GroupMembershipOutputSchema,
     GroupMembershipUpdateSchema,
     GroupOutputSchema,

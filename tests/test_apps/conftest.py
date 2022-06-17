@@ -4,11 +4,10 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from fastapi_another_jwt_auth import AuthJWT
 from src.apps.groups.models import (
     Group,
-    GroupInputSchema,
     GroupMembership,
-    GroupOutputSchema,
     GroupRequest,
 )
+from src.apps.groups.schemas import GroupInputSchema
 from src.apps.groups.services import GroupService
 
 from src.apps.users.services import UserService
@@ -104,7 +103,7 @@ async def public_group_in_db(
     group_create_data: dict[str, str],
     user_in_db: User,
     session: AsyncSession,
-) -> GroupOutputSchema:
+) -> Group:
     schema = GroupInputSchema(**group_create_data)
     return await GroupService.create_group(
         schema=schema, user=user_in_db, session=session
@@ -116,7 +115,7 @@ async def private_group_in_db(
     group_create_data: dict[str, str],
     user_in_db: User,
     session: AsyncSession,
-) -> GroupOutputSchema:
+) -> Group:
     schema = GroupInputSchema(**group_create_data)
     schema.name = "test private"
     schema.status = "PRIVATE"
@@ -130,7 +129,7 @@ async def closed_group_in_db(
     group_create_data: dict[str, str],
     user_in_db: User,
     session: AsyncSession,
-) -> GroupOutputSchema:
+) -> Group:
     schema = GroupInputSchema(**group_create_data)
     schema.name = "test closed"
     schema.status = "CLOSED"

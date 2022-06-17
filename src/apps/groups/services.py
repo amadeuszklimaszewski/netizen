@@ -12,10 +12,12 @@ from src.core.exceptions import (
 from src.apps.groups.enums import GroupMemberStatus
 from src.apps.groups.models import (
     Group,
-    GroupInputSchema,
     GroupMembership,
-    GroupMembershipUpdateSchema,
     GroupRequest,
+)
+from src.apps.groups.schemas import (
+    GroupInputSchema,
+    GroupMembershipUpdateSchema,
     GroupRequestUpdateSchema,
 )
 from src.apps.groups.permissions import (
