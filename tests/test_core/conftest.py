@@ -1,12 +1,12 @@
 import pytest
 import pytest_asyncio
 from sqlmodel.ext.asyncio.session import AsyncSession
-from fastapi_another_jwt_auth import AuthJWT
-from src.apps.groups.models import GroupInputSchema, GroupOutputSchema
+from src.apps.groups.schemas import GroupInputSchema, GroupOutputSchema
 from src.apps.groups.services import GroupService
 
 from src.apps.users.services import UserService
-from src.apps.users.models import User, UserOutputSchema, RegisterSchema
+from src.apps.users.models import User
+from src.apps.users.schemas import UserOutputSchema, RegisterSchema
 
 
 @pytest.fixture
