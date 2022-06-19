@@ -43,7 +43,8 @@ async def user_in_db(
 ) -> UserOutputSchema:
     schema = RegisterSchema(**user_register_data)
     user = await UserService.register_user(schema=schema, session=session)
-    await UserService.activate_account(email=user.email, session=session)
+    user.is_active = True
+    await session.commit()
     await session.refresh(user)
     return user
 
@@ -73,7 +74,8 @@ async def other_user_in_db(
 ) -> UserOutputSchema:
     schema = RegisterSchema(**other_user_register_data)
     user = await UserService.register_user(schema=schema, session=session)
-    await UserService.activate_account(email=user.email, session=session)
+    user.is_active = True
+    await session.commit()
     await session.refresh(user)
     return user
 

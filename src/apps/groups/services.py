@@ -1,6 +1,6 @@
 from typing import Union
 from uuid import UUID
-from sqlmodel import select, update, and_, or_
+from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.exceptions import (
@@ -9,7 +9,7 @@ from src.core.exceptions import (
     DoesNotExistException,
     GroupRequestAlreadyHandled,
 )
-from src.apps.groups.enums import GroupMemberStatus
+from src.apps.groups.enums import GroupMemberStatus, GroupRequestStatus, GroupStatus
 from src.apps.groups.models import (
     Group,
     GroupMembership,
@@ -122,10 +122,8 @@ class GroupService:
         membership: Union[GroupMembership, None] = (
             await session.exec(
                 select(GroupMembership).where(
-                    and_(
-                        GroupMembership.group_id == group_id,
-                        GroupMembership.user_id == user_id,
-                    )
+                    (GroupMembership.group_id == group_id)
+                    & (GroupMembership.user_id == user_id)
                 )
             )
         ).first()
@@ -247,14 +245,18 @@ class GroupService:
     ) -> list[Group]:
         if not request_user:
             return (
-                await session.exec(select(Group).where(Group.status != "CLOSED"))
+                await session.exec(
+                    select(Group).where(Group.status != GroupStatus.CLOSED)
+                )
             ).all()
         return (
             await session.exec(
                 select(Group)
                 .join(Group.members)
                 .join(GroupMembership.user)
-                .where(or_(User.id == request_user.id, Group.status != "CLOSED"))
+                .where(
+                    (User.id == request_user.id) | (Group.status != GroupStatus.CLOSED)
+                )
             )
         ).all()
 
@@ -266,9 +268,9 @@ class GroupService:
         session: AsyncSession,
     ) -> Group:
         group: Group = await get_object_by_id(Table=Group, id=group_id, session=session)
-        if not request_user and group.status == "CLOSED":
+        if not request_user and group.status == GroupStatus.CLOSED:
             raise PermissionDeniedException
-        if request_user and group.status == "CLOSED":
+        if request_user and group.status == GroupStatus.CLOSED:
             membership = await cls._find_membership_or_raise_exception(
                 group_id=group_id, user_id=request_user.id, session=session
             )
@@ -290,7 +292,9 @@ class GroupService:
         ):
             raise AlreadyExistsException("User is already a member of this group")
 
-        request = GroupRequest(group=group, user=request_user, status="PENDING")
+        request = GroupRequest(
+            group=group, user=request_user, status=GroupRequestStatus.PENDING
+        )
         session.add(request)
         await session.commit()
         await session.refresh(request)
@@ -313,14 +317,17 @@ class GroupService:
             group_id=group_id, request_id=request_id, session=session
         )
 
-        if request.status == "ACCEPTED" or request.status == "DENIED":
+        if (
+            request.status == GroupRequestStatus.ACCEPTED
+            or request.status == GroupRequestStatus.DENIED
+        ):
             raise GroupRequestAlreadyHandled("Group request already denied or accepted")
         update_data = schema.dict()
-        if update_data["status"] == "ACCEPTED":
+        if update_data["status"] == GroupRequestStatus.ACCEPTED:
             await cls.create_membership(
                 group_id=group_id,
                 user=request.user,
-                membership_status="REGULAR",
+                membership_status=GroupMemberStatus.REGULAR,
                 session=session,
             )
         await session.exec(
@@ -346,10 +353,8 @@ class GroupService:
         request: Union[GroupRequest, None] = (
             await session.exec(
                 select(GroupRequest).where(
-                    and_(
-                        GroupRequest.id == request_id,
-                        GroupRequest.group_id == group_id,
-                    )
+                    (GroupRequest.id == request_id)
+                    & (GroupRequest.group_id == group_id)
                 )
             )
         ).first()
@@ -371,10 +376,8 @@ class GroupService:
         return (
             await session.exec(
                 select(GroupRequest).where(
-                    and_(
-                        GroupRequest.group_id == group_id,
-                        GroupRequest.status == "PENDING",
-                    )
+                    (GroupRequest.group_id == group_id)
+                    & (GroupRequest.status == GroupRequestStatus.PENDING)
                 )
             )
         ).all()
@@ -405,10 +408,8 @@ class GroupService:
         requests = (
             await session.exec(
                 select(GroupRequest).where(
-                    and_(
-                        GroupRequest.user_id == request_user.id,
-                        GroupRequest.status == "PENDING",
-                    )
+                    (GroupRequest.user_id == request_user.id)
+                    & (GroupRequest.status == GroupRequestStatus.PENDING)
                 )
             )
         ).all()
@@ -438,7 +439,7 @@ class GroupService:
         request = await cls.filter_get_user_group_request_by_id(
             request_id=request_id, request_user=request_user, session=session
         )
-        if request.status != "PENDING":
+        if request.status != GroupRequestStatus.PENDING:
             raise GroupRequestAlreadyHandled("Group request was already handled.")
         await session.delete(request)
         await session.commit()

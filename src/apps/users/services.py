@@ -1,12 +1,13 @@
 import json
 from typing import Union
 from uuid import UUID
-from sqlmodel import select, and_, or_, update
+from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
 
 from src.apps.emails.services import EmailService
+from src.apps.users.enums import FriendRequestStatus
 from src.apps.users.models import (
     Friend,
     FriendRequest,
@@ -118,15 +119,13 @@ class FriendService:
         friends = (
             await session.exec(
                 select(Friend).where(
-                    or_(
-                        and_(
-                            Friend.user_id == user_id,
-                            Friend.friend_user_id == friend_user_id,
-                        ),
-                        and_(
-                            Friend.friend_user_id == user_id,
-                            Friend.user_id == friend_user_id,
-                        ),
+                    (
+                        (Friend.user_id == user_id)
+                        & (Friend.friend_user_id == friend_user_id)
+                    )
+                    | (
+                        (Friend.friend_user_id == user_id)
+                        & (Friend.user_id == friend_user_id)
                     )
                 )
             )
@@ -140,10 +139,7 @@ class FriendService:
         friend = (
             await session.exec(
                 select(Friend).where(
-                    and_(
-                        Friend.user_id == user_id,
-                        Friend.id == friend_id,
-                    )
+                    (Friend.user_id == user_id) & (Friend.id == friend_id)
                 )
             )
         ).first()
@@ -156,17 +152,15 @@ class FriendService:
         friend_request = (
             await session.exec(
                 select(FriendRequest).where(
-                    or_(
-                        and_(
-                            FriendRequest.from_user_id == user_id,
-                            FriendRequest.to_user_id == friend_user_id,
-                            FriendRequest.status == "PENDING",
-                        ),
-                        and_(
-                            FriendRequest.from_user_id == friend_user_id,
-                            FriendRequest.to_user_id == user_id,
-                            FriendRequest.status == "PENDING",
-                        ),
+                    (
+                        (FriendRequest.from_user_id == user_id)
+                        & (FriendRequest.to_user_id == friend_user_id)
+                        & (FriendRequest.status == "PENDING")
+                    )
+                    | (
+                        (FriendRequest.from_user_id == friend_user_id)
+                        & (FriendRequest.to_user_id == user_id)
+                        & (FriendRequest.status == "PENDING")
                     )
                 )
             )
@@ -254,7 +248,9 @@ class FriendService:
             raise AlreadyExistsException("Unhandled friend request exists.")
 
         request = FriendRequest(
-            from_user_id=request_user.id, to_user_id=user_id, status="PENDING"
+            from_user_id=request_user.id,
+            to_user_id=user_id,
+            status=FriendRequestStatus.PENDING,
         )
 
         session.add(request)
@@ -275,7 +271,7 @@ class FriendService:
             request_user=request_user,
             session=session,
         )
-        if received_request.status != "PENDING":
+        if received_request.status != FriendRequestStatus.PENDING:
             raise FriendRequestAlreadyHandled("Friend request was already handled.")
         update_data = schema.dict()
         await session.exec(
@@ -284,7 +280,7 @@ class FriendService:
             .values(**update_data)
         )
         await session.refresh(received_request)
-        if received_request.status == "ACCEPTED":
+        if received_request.status == FriendRequestStatus.ACCEPTED:
             await cls.create_friend(
                 user_id=request_user.id,
                 friend_id=received_request.from_user_id,
@@ -331,10 +327,8 @@ class FriendService:
         received_request = (
             await session.exec(
                 select(FriendRequest).where(
-                    and_(
-                        FriendRequest.id == friend_request_id,
-                        FriendRequest.to_user_id == request_user.id,
-                    )
+                    (FriendRequest.id == friend_request_id)
+                    & (FriendRequest.to_user_id == request_user.id)
                 )
             )
         ).first()
@@ -367,10 +361,8 @@ class FriendService:
         sent_request = (
             await session.exec(
                 select(FriendRequest).where(
-                    and_(
-                        FriendRequest.id == friend_request_id,
-                        FriendRequest.from_user_id == request_user.id,
-                    )
+                    (FriendRequest.id == friend_request_id)
+                    & (FriendRequest.from_user_id == request_user.id)
                 )
             )
         ).first()

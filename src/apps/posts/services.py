@@ -1,7 +1,8 @@
 from typing import Union
 from uuid import UUID
-from sqlmodel import select, update, and_
+from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
+from src.apps.groups.enums import GroupStatus
 from src.apps.groups.models import Group, GroupMembership
 from src.apps.posts.models import (
     GroupPost,
@@ -51,10 +52,7 @@ class UserPostService:
         user_post = (
             await session.exec(
                 select(UserPost).where(
-                    and_(
-                        UserPost.user_id == user_id,
-                        UserPost.id == post_id,
-                    )
+                    (UserPost.user_id == user_id) & (UserPost.id == post_id)
                 )
             )
         ).first()
@@ -346,14 +344,12 @@ class GroupPostService:
             membership = (
                 await session.exec(
                     select(GroupMembership).where(
-                        and_(
-                            GroupMembership.group_id == group_id,
-                            GroupMembership.user_id == request_user.id,
-                        )
+                        (GroupMembership.group_id == group_id)
+                        & (GroupMembership.user_id == request_user.id)
                     )
                 )
             ).first()
-        if not membership and group.status != "PUBLIC":
+        if not membership and group.status != GroupStatus.PUBLIC:
             raise PermissionDeniedException("User unauthorized.")
         return True
 
@@ -371,10 +367,8 @@ class GroupPostService:
             membership = (
                 await session.exec(
                     select(GroupMembership).where(
-                        and_(
-                            GroupMembership.group_id == group_id,
-                            GroupMembership.user_id == request_user.id,
-                        )
+                        (GroupMembership.group_id == group_id)
+                        & (GroupMembership.user_id == request_user.id)
                     )
                 )
             ).first()
@@ -392,10 +386,7 @@ class GroupPostService:
         group_post = (
             await session.exec(
                 select(GroupPost).where(
-                    and_(
-                        GroupPost.group_id == group_id,
-                        GroupPost.id == post_id,
-                    )
+                    (GroupPost.group_id == group_id) & (GroupPost.id == post_id)
                 )
             )
         ).first()
@@ -417,11 +408,9 @@ class GroupPostService:
                 select(GroupPostComment)
                 .join(GroupPostComment.post)
                 .where(
-                    and_(
-                        GroupPost.group_id == group_id,
-                        GroupPostComment.post_id == post_id,
-                        GroupPostComment.id == comment_id,
-                    )
+                    (GroupPost.group_id == group_id)
+                    & (GroupPostComment.post_id == post_id)
+                    & (GroupPostComment.id == comment_id)
                 )
             )
         ).first()
@@ -445,11 +434,9 @@ class GroupPostService:
                 select(GroupPostReaction)
                 .join(GroupPostReaction.post)
                 .where(
-                    and_(
-                        GroupPost.group_id == group_id,
-                        GroupPostReaction.post_id == post_id,
-                        GroupPostReaction.id == reaction_id,
-                    )
+                    (GroupPost.group_id == group_id)
+                    & (GroupPostReaction.post_id == post_id)
+                    & (GroupPostReaction.id == reaction_id)
                 )
             )
         ).first()
