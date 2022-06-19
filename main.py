@@ -21,7 +21,6 @@ app = FastAPI(
     redoc_url="/api/v1/redoc",
 )
 
-
 # ----- Routing -----
 
 app.include_router(email_router)

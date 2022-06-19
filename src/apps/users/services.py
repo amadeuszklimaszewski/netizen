@@ -1,7 +1,10 @@
+import json
 from typing import Union
 from uuid import UUID
 from sqlmodel import select, and_, or_, update
 from sqlmodel.ext.asyncio.session import AsyncSession
+from fastapi_another_jwt_auth import AuthJWT
+from fastapi_another_jwt_auth.exceptions import AuthJWTException
 
 from src.apps.emails.services import EmailService
 from src.apps.users.models import (
@@ -21,6 +24,7 @@ from src.core.exceptions import (
     InvalidCredentialsException,
     PermissionDeniedException,
     AlreadyActivatedAccountException,
+    InvalidConfirmationTokenException,
 )
 from src.core.utils import get_object_by_id
 
@@ -69,9 +73,15 @@ class UserService:
     @classmethod
     async def activate_account(
         cls,
-        email: str,
+        token: str,
+        auth_jwt: AuthJWT,
         session: AsyncSession,
     ) -> None:
+        try:
+            email = json.loads(auth_jwt.get_raw_jwt(token)["sub"])["email"]
+        except AuthJWTException:
+            raise InvalidConfirmationTokenException("Invalid token")
+
         user: User = (
             await session.exec(select(User).where(User.email == email))
         ).first()

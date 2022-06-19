@@ -1,18 +1,14 @@
 import json
 from fastapi import APIRouter, Depends, status
 from fastapi_another_jwt_auth import AuthJWT
-from fastapi_another_jwt_auth.exceptions import AuthJWTException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.apps.users.services import UserService
-from src.core.exceptions import (
-    InvalidConfirmationTokenException,
-)
 from src.database.connection import get_db
 
 email_router = APIRouter()
 
 
-@email_router.get(
+@email_router.post(
     "/confirm/",
     status_code=status.HTTP_200_OK,
 )
@@ -22,11 +18,5 @@ async def confirm_account(
     user_service: UserService = Depends(),
     session: AsyncSession = Depends(get_db),
 ):
-    try:
-        email = json.loads(auth_jwt.get_raw_jwt(token)["sub"])["email"]
-    except AuthJWTException:
-        raise InvalidConfirmationTokenException("Invalid token")
-
-    await user_service.activate_account(email=email, session=session)
-
+    await user_service.activate_account(token=token, auth_jwt=auth_jwt, session=session)
     return {"Success": "Account activated!"}
