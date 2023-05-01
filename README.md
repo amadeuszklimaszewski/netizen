@@ -29,7 +29,7 @@ SwaggerUI docs available at `localhost:8000/api/v1/docs`
 
 ## Setup
 1. Clone repository:
-`$ git clone https://github.com/amadeuszklimaszewski/fastapi-async-template`
+`$ git clone https://github.com/amadeuszklimaszewski/netizen`
 2. Run in root directory:
 `$ make build-dev`
 3. Provide `AUTHJWT_SECRET_KEY` in .env file
